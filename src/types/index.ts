@@ -77,6 +77,9 @@ export interface JDAnalysis {
   experienceLevel: string;
   industryContext: string;
   keywords: string[];
+  coreResponsibilities: string[];
+  hiddenRequirements: string[];
+  atsKeywords: string[];
 }
 
 export interface ExperienceMapping {
@@ -85,6 +88,24 @@ export interface ExperienceMapping {
   experienceGap: string | null;
   relevanceScore: number; // 0-100
   notes: string[];
+  recommendedExperience: string[];
+  recommendedProjects: string[];
+  sectionsToDownplay: string[];
+}
+
+export type CritiqueCategory =
+  | "fabrication"
+  | "content"
+  | "impact"
+  | "ats"
+  | "clarity";
+
+export interface CategorizedSuggestions {
+  fabrication: string[];
+  content: string[];
+  impact: string[];
+  ats: string[];
+  clarity: string[];
 }
 
 export interface ResumeCritique {
@@ -94,6 +115,29 @@ export interface ResumeCritique {
   suggestions: string[];
   atsScore: number;
   isConverged: boolean;
+  categorizedSuggestions?: CategorizedSuggestions;
+  previousWeaknessesAddressed?: string[];
+  newWeaknesses?: string[];
+  recurringWeaknesses?: string[];
+}
+
+export interface RevisionPlan {
+  topSuggestions: string[];
+  categories: CategorizedSuggestions;
+  addressedFromPrevious: string[];
+  unresolvedFromPrevious: string[];
+}
+
+export interface ConvergenceResult {
+  isConverged: boolean;
+  reason:
+    | "llm_judgment"
+    | "score_ceiling"
+    | "score_delta"
+    | "no_new_weaknesses"
+    | "max_iterations";
+  scoreDelta: number | null;
+  newWeaknesses: string[];
 }
 
 // ─── Pipeline State ────────────────────────────────────────
@@ -112,6 +156,9 @@ export interface PipelineState {
     resume: string;
     critique: ResumeCritique;
   }>;
+  bestResume: string | null;
+  bestScore: number;
+  convergenceResult: ConvergenceResult | null;
 }
 
 // ─── Storage ────────────────────────────────────────────────
