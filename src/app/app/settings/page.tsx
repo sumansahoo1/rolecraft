@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,11 +35,18 @@ const MODEL_OPTIONS: { value: DeepSeekModel; label: string; desc: string }[] = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [apiKey, setApiKeyState] = useState(() => getApiKey() ?? "");
-  const [model, setModelState] = useState<DeepSeekModel>(() => getModel());
+  const [apiKey, setApiKeyState] = useState("");
+  const [model, setModelState] = useState<DeepSeekModel>("deepseek-chat");
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const prevKeyRef = useRef(apiKey);
+
+  // Load stored settings on client only to avoid hydration mismatch
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setApiKeyState(getApiKey() ?? "");
+    setModelState(getModel());
+  }, []);
 
   const handleApiKeyChange = (value: string) => {
     setApiKeyState(value);

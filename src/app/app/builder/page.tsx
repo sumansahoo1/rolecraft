@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Play, Square, FileText, AlertTriangle, Copy } from "lucide-react";
@@ -15,8 +15,10 @@ import { JDAnalysisPanel } from "@/components/pipeline/JDAnalysisPanel";
 import { ExperienceMappingPanel } from "@/components/pipeline/ExperienceMappingPanel";
 import { ResumeDisplay } from "@/components/pipeline/ResumeDisplay";
 import { CritiquePanel } from "@/components/pipeline/CritiquePanel";
+import VerificationPanel from "@/components/pipeline/VerificationPanel";
 import { usePipeline } from "@/hooks/usePipeline";
 import { getMasterResume, getApiKey } from "@/lib/storage";
+import type { MasterResume } from "@/types";
 import { copyToClipboard } from "@/lib/export";
 
 const EXAMPLE_JD = `Senior Frontend Engineer
@@ -37,8 +39,15 @@ export default function BuilderPage() {
   const [jd, setJd] = useState("");
   const [activeTab, setActiveTab] = useState("analysis");
   const [userPickedTab, setUserPickedTab] = useState(false);
+  const [masterResume, setMasterResume] = useState<MasterResume | null>(null);
+  const [resumeLoaded, setResumeLoaded] = useState(false);
 
-  const masterResume = getMasterResume();
+  // Load master resume on the client only to avoid hydration mismatch
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMasterResume(getMasterResume());
+    setResumeLoaded(true);
+  }, []);
 
   const handleRun = () => {
     if (!jd.trim()) {
@@ -63,6 +72,11 @@ export default function BuilderPage() {
   };
 
   const pipelineDone = !pipeline.running && pipeline.currentResume != null;
+  const latexAvailable = !pipeline.running && pipeline.latexSource != null;
+  const latexPhase = pipeline.running &&
+    (pipeline.currentStep === "resume-spec" ||
+     pipeline.currentStep === "latex-generation" ||
+     pipeline.currentStep === "latex-verification");
 
   const isConverged =
     pipeline.critique?.score != null &&
@@ -75,7 +89,10 @@ export default function BuilderPage() {
     if (pipelineDone) setUserPickedTab(true);
   };
 
-  const displayTab = pipelineDone && !userPickedTab ? "resume" : activeTab;
+  // Auto-advance to LaTeX tab when it becomes available
+  const displayTab = pipelineDone && !userPickedTab
+    ? (latexAvailable ? "latex" : "resume")
+    : activeTab;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -90,7 +107,14 @@ export default function BuilderPage() {
           )}
         </div>
 
-        {!masterResume ? (
+        {!resumeLoaded ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-8">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </CardContent>
+          </Card>
+        ) : !masterResume ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-8">
               <AlertTriangle className="size-6 text-yellow-600" />
@@ -184,6 +208,7 @@ export default function BuilderPage() {
                   {isConverged
                     ? "Resume Converged!"
                     : `Resume Ready (${pipeline.iteration} iterations)`}
+                  {latexAvailable && " • LaTeX Generated"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {isConverged
@@ -235,12 +260,12 @@ export default function BuilderPage() {
                 <TabsTrigger
                   value="resume"
                   className={
-                    pipelineDone && !userPickedTab
+                    pipelineDone && !userPickedTab && !latexAvailable
                       ? "ring-2 ring-green-500/50"
                       : ""
                   }
                 >
-                  Resume
+                  Text
                   {pipeline.currentResume && (
                     <span className="ml-1.5 flex size-2 rounded-full bg-green-500" />
                   )}
@@ -249,6 +274,29 @@ export default function BuilderPage() {
                   Critique
                   {pipeline.critique && (
                     <CheckBadge className="ml-1.5 size-3 text-green-600" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="latex"
+                  className={
+                    latexAvailable && !userPickedTab
+                      ? "ring-2 ring-green-500/50"
+                      : ""
+                  }
+                >
+                  LaTeX
+                  {pipeline.latexSource && (
+                    <span className="ml-1.5 flex size-2 rounded-full bg-green-500" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="verify">
+                  Verify
+                  {pipeline.latexVerification && (
+                    pipeline.latexVerification.passes ? (
+                      <CheckBadge className="ml-1.5 size-3 text-green-600" />
+                    ) : (
+                      <span className="ml-1.5 flex size-2 rounded-full bg-amber-500" />
+                    )
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -314,6 +362,44 @@ export default function BuilderPage() {
                 ) : (
                   <p className="py-8 text-center text-sm text-muted-foreground">
                     Waiting for critique...
+                  </p>
+                )}
+              </TabsContent>
+
+              {/* LaTeX Tab */}
+              <TabsContent value="latex" className="mt-4">
+                {pipeline.latexSource ? (
+                  <ResumeDisplay
+                    resume={pipeline.currentResume || ""}
+                    iteration={pipeline.iteration}
+                    bestScore={pipeline.bestScore}
+                    totalIterations={pipeline.history.length}
+                    showLatex={true}
+                    latexSource={pipeline.latexSource}
+                    latexHtmlBlob={pipeline.latexPdfBlob}
+                    resumeSpec={pipeline.resumeSpec}
+                  />
+                ) : latexPhase ? (
+                  <LoadingResume />
+                ) : (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    LaTeX will be generated after the critique phase...
+                  </p>
+                )}
+              </TabsContent>
+
+              {/* Verify Tab */}
+              <TabsContent value="verify" className="mt-4">
+                {pipeline.latexVerification ? (
+                  <VerificationPanel
+                    verification={pipeline.latexVerification}
+                  />
+                ) : latexPhase &&
+                  pipeline.currentStep === "latex-verification" ? (
+                  <LoadingCards />
+                ) : (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Verification runs after LaTeX compilation...
                   </p>
                 )}
               </TabsContent>

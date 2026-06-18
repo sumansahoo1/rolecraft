@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
@@ -20,10 +20,14 @@ import type { MasterResume } from "@/types";
 export default function ResumePage() {
   const router = useRouter();
   const { loading, error, result, extract, reset } = useResumeExtraction();
-  const [saved, setSaved] = useState<MasterResume | null>(
-    () => getMasterResume()
-  );
+  const [saved, setSaved] = useState<MasterResume | null>(null);
   const [rawText, setRawText] = useState<string | null>(null);
+
+  // Load saved resume on client only to avoid hydration mismatch
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSaved(getMasterResume());
+  }, []);
 
   const handleExtract = async (text: string) => {
     setRawText(text);
