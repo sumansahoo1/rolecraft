@@ -142,12 +142,14 @@ export default function LaTeXEditor({
             </button>
           </div>
 
-          {/* Print button — uses same HTML as preview for pixel-identical output */}
+          {/* Print button — same HTML as preview, pixel-identical output.
+               In the browser print dialog: uncheck "Headers and footers",
+               set Margins to "None", and select "Save as PDF". */}
           <button
             onClick={handlePrintPdf}
             disabled={!htmlBlob}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Save as PDF — uncheck 'Headers and footers' in the print dialog"
+            title="Save as PDF — uncheck 'Headers and footers', set Margins to 'None'"
           >
             <Printer className="h-3.5 w-3.5" />
             Save PDF

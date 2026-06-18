@@ -11,8 +11,7 @@ import {
   RESUME_SPEC_GENERATION_PROMPT,
 } from "@/lib/ai";
 import { getApiKey, getModel } from "@/lib/storage";
-import { generateLatexSource, getLatexEngine } from "@/lib/latex";
-import { generateSpecPdfBlob } from "@/lib/export";
+import { generateLatexSource, getLatexEngine, shrinkSpecToFit } from "@/lib/latex";
 import type {
   MasterResume,
   JDAnalysis,
@@ -787,16 +786,20 @@ export function usePipeline() {
           latexPdfBlob = engine.pdfBlob;
         }
 
-        // Generate PDF and measure for verification
-        const { finalY, pageHeight: pdfPageH, marginBottom: pdfMarginB } =
-          await generateSpecPdfBlob(resumeSpec);
+        // ─── Auto-shrink to fit 1 page ───
+        // Renders HTML and measures actual browser layout (same engine as preview)
+        const shrinkResult = await shrinkSpecToFit(resumeSpec);
+        const fit = shrinkResult.fit;
+        const fitsOnePage = fit.fits;
+        // Use the shrunk spec for final output if it was modified
+        if (shrinkResult.level > 0) {
+          resumeSpec = shrinkResult.spec;
+        }
 
-        const fitsOnePage = finalY <= pdfPageH - pdfMarginB;
-
-        // ─── Real verification checks ───
+        // ─── Real verification checks (using HTML measurement) ───
         const vChecks: LatexVerificationResult["checks"] = [];
 
-        // 1. Contact info completeness
+        // 1. Contact info
         const missingContact: string[] = [];
         if (!resumeSpec.meta.name) missingContact.push("name");
         if (!resumeSpec.meta.email) missingContact.push("email");
@@ -805,48 +808,39 @@ export function usePipeline() {
           passed: missingContact.length === 0,
           detail:
             missingContact.length === 0
-              ? `Name and email present`
+              ? "Name and email present"
               : `Missing: ${missingContact.join(", ")}`,
         });
 
         // 2. Section completeness
-        const sectionsPresent: string[] = [];
-        const sectionsMissing: string[] = [];
-        if (resumeSpec.summary.text) sectionsPresent.push("Summary");
-        else sectionsMissing.push("Summary");
-        if (resumeSpec.experience.length > 0)
-          sectionsPresent.push(`Experience (${resumeSpec.experience.length})`);
-        else sectionsMissing.push("Experience");
-        if (resumeSpec.projects.length > 0)
-          sectionsPresent.push(`Projects (${resumeSpec.projects.length})`);
-        else sectionsMissing.push("Projects");
-        if (resumeSpec.skills.categories.length > 0)
-          sectionsPresent.push(`Skills (${resumeSpec.skills.categories.length})`);
-        else sectionsMissing.push("Skills");
-        if (resumeSpec.education.length > 0)
-          sectionsPresent.push(`Education (${resumeSpec.education.length})`);
-        else sectionsMissing.push("Education");
+        const sPresent: string[] = [];
+        const sMissing: string[] = [];
+        if (resumeSpec.summary.text) sPresent.push("Summary");
+        else sMissing.push("Summary");
+        if (resumeSpec.experience.length > 0) sPresent.push(`Exp (${resumeSpec.experience.length})`);
+        else sMissing.push("Experience");
+        if (resumeSpec.projects.length > 0) sPresent.push(`Projects (${resumeSpec.projects.length})`);
+        else sMissing.push("Projects");
+        if (resumeSpec.skills.categories.length > 0) sPresent.push(`Skills (${resumeSpec.skills.categories.length})`);
+        else sMissing.push("Skills");
+        if (resumeSpec.education.length > 0) sPresent.push(`Edu (${resumeSpec.education.length})`);
+        else sMissing.push("Education");
 
         vChecks.push({
           name: "Section Completeness",
-          passed: sectionsMissing.length === 0,
-          detail:
-            sectionsMissing.length === 0
-              ? `All present: ${sectionsPresent.join(", ")}`
-              : `Present: ${sectionsPresent.join(", ")}${
-                  sectionsMissing.length > 0
-                    ? ` | Missing: ${sectionsMissing.join(", ")}`
-                    : ""
-                }`,
+          passed: sMissing.length === 0,
+          detail: sMissing.length === 0
+            ? `All present: ${sPresent.join(", ")}`
+            : `Missing: ${sMissing.join(", ")}`,
         });
 
-        // 3. Page count (from actual PDF measurement)
+        // 3. Page count — from REAL browser measurement
         vChecks.push({
           name: "Page Count",
           passed: fitsOnePage,
           detail: fitsOnePage
-            ? `Fits on 1 letter page (content ends at ${finalY}pt / ${pdfPageH - pdfMarginB}pt)`
-            : `Content overflows — ends at ${finalY}pt but page limit is ${pdfPageH - pdfMarginB}pt`,
+            ? `Fits on 1 letter page (${fit.scrollHeight}px / ${fit.pageHeight}px usable)`
+            : `Overflows by ~${fit.overflowPx}px (est. ${fit.estPages} pages). Shrink level ${shrinkResult.level}/4 applied.`,
         });
 
         // 4. LaTeX source
@@ -856,7 +850,7 @@ export function usePipeline() {
           detail: ".tex source available for download",
         });
 
-        // Build issues list from failed checks
+        // Issues
         const vIssues: LatexVerificationResult["issues"] = [];
         for (const check of vChecks) {
           if (!check.passed) {
@@ -877,8 +871,8 @@ export function usePipeline() {
           passes: vChecks.every((c) => c.passed),
           checks: vChecks,
           issues: vIssues,
-          pageCount: fitsOnePage ? 1 : 2,
-          fixAttempts: 1,
+          pageCount: fitsOnePage ? 1 : fit.estPages,
+          fixAttempts: shrinkResult.level + 1,
         };
 
         setState((s) => ({
