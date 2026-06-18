@@ -318,3 +318,70 @@ Return ONLY valid JSON:
 }
 
 Set "isConverged" to true ONLY if the resume is truly exceptional — overall score >= 90 AND ATS score >= 90 — AND further iterations would not meaningfully improve it. The pipeline will continue iterating (up to 50 times) until both quality and ATS compatibility are excellent. If the resume has fabricated content, "isConverged" MUST be false. Push for excellence, not adequacy.`;
+
+export const RESUME_SPEC_GENERATION_PROMPT = `You are an expert resume data structurer. Convert the provided plain-text resume into a structured JSON format (ResumeSpec). This structured format will be used to generate a professional LaTeX resume.
+
+Map every section precisely. Preserve ALL content verbatim — do not rewrite, summarize, or omit anything.
+
+Return ONLY valid JSON with this exact structure:
+
+{
+  "meta": {
+    "name": "string (full name from the resume)",
+    "email": "string",
+    "phone": "string | null",
+    "linkedin": "string | null",
+    "portfolio": "string | null",
+    "targetRole": "string (infer from the resume content or set to empty string)"
+  },
+  "summary": {
+    "text": "string (the SUMMARY section text, exactly as-is)"
+  },
+  "skills": {
+    "categories": [
+      {
+        "name": "string (category name: Languages, Frameworks, Databases, Tools, Infrastructure, etc.)",
+        "items": ["string (individual skills in this category)"]
+      }
+    ]
+  },
+  "experience": [
+    {
+      "company": "string",
+      "role": "string",
+      "dates": "string (e.g. 'Jan 2020 - Mar 2023')",
+      "bullets": ["string (achievement bullet points, exactly as written)"],
+      "featured": true
+    }
+  ],
+  "projects": [
+    {
+      "name": "string",
+      "bullets": ["string (project bullets, exactly as written)"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "string",
+      "degree": "string",
+      "field": "string",
+      "year": "string"
+    }
+  ],
+  "optionalSections": [
+    {
+      "heading": "string (section title)",
+      "items": ["string (items in this section)"]
+    }
+  ]
+}
+
+Rules:
+- Parse the SKILLS into logical categories (Languages, Frameworks, Databases, Tools & Infrastructure, etc.). Group related technologies together.
+- For EXPERIENCE: extract each role with its company, role title, dates, and each bullet point. Set "featured": true for roles that have the most bullets or seem most prominent.
+- For PROJECTS: extract each project with its name and bullet points.
+- For EDUCATION: extract each entry with institution, degree, field, and year.
+- Any additional sections (CERTIFICATIONS, AWARDS, PUBLICATIONS, VOLUNTEER, LANGUAGES, etc.) should go into "optionalSections" with the heading and items.
+- If a section does not exist in the resume, use empty arrays (not null).
+- Include "optionalSections" as an empty array if there are no optional sections.
+- Copy ALL text verbatim. Do NOT summarize or rewrite bullet points.`;

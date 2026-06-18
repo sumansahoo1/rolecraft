@@ -252,3 +252,20 @@ function triggerDownload(blob: Blob, filename: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export function downloadLatexPdf(
+  blob: Blob,
+  filename: string = "rolecraft-resume.pdf"
+): void {
+  triggerDownload(blob, filename);
+  toast.success("Downloaded as PDF (LaTeX)");
+}
+
+export function downloadTex(
+  tex: string,
+  filename: string = "rolecraft-resume.tex"
+): void {
+  const blob = new Blob([tex], { type: "application/x-tex" });
+  triggerDownload(blob, filename);
+  toast.success("Downloaded as .tex");
+}
