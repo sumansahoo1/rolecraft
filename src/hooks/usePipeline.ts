@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai";
 import { getApiKey, getModel } from "@/lib/storage";
 import { generateLatexSource, getLatexEngine } from "@/lib/latex";
+import { generateSpecPdfBlob } from "@/lib/export";
 import type {
   MasterResume,
   JDAnalysis,
@@ -728,6 +729,18 @@ export function usePipeline() {
         let resumeSpec: ResumeSpec;
         try {
           resumeSpec = parseJsonResponse(specRaw) as ResumeSpec;
+
+          // Merge MasterResume contact details into the spec.
+          // The text resume may not include structured contact fields,
+          // but the MasterResume always has them as the source of truth.
+          resumeSpec.meta = {
+            ...resumeSpec.meta,
+            name: masterResume.name || resumeSpec.meta.name,
+            email: masterResume.email || resumeSpec.meta.email,
+            phone: masterResume.phone || resumeSpec.meta.phone || undefined,
+            linkedin: masterResume.linkedin || resumeSpec.meta.linkedin || undefined,
+            portfolio: masterResume.portfolio || resumeSpec.meta.portfolio || undefined,
+          };
         } catch {
           // If parsing fails, set error and skip LaTeX phase
           setState((s) => ({
@@ -766,7 +779,7 @@ export function usePipeline() {
         let latexPdfBlob: Blob | null = null;
         let latexVerification: LatexVerificationResult | null = null;
 
-        // Compile ResumeSpec → HTML (local renderer, instant — no CDN)
+        // Compile ResumeSpec → PDF (local, instant — no CDN)
         const engine = getLatexEngine();
         await engine.init();
         const compileResult = await engine.compile(resumeSpec);
@@ -774,43 +787,97 @@ export function usePipeline() {
           latexPdfBlob = engine.pdfBlob;
         }
 
-        // Verify output
+        // Generate PDF and measure for verification
+        const { finalY, pageHeight: pdfPageH, marginBottom: pdfMarginB } =
+          await generateSpecPdfBlob(resumeSpec);
+
+        const fitsOnePage = finalY <= pdfPageH - pdfMarginB;
+
+        // ─── Real verification checks ───
+        const vChecks: LatexVerificationResult["checks"] = [];
+
+        // 1. Contact info completeness
+        const missingContact: string[] = [];
+        if (!resumeSpec.meta.name) missingContact.push("name");
+        if (!resumeSpec.meta.email) missingContact.push("email");
+        vChecks.push({
+          name: "Contact Details",
+          passed: missingContact.length === 0,
+          detail:
+            missingContact.length === 0
+              ? `Name and email present`
+              : `Missing: ${missingContact.join(", ")}`,
+        });
+
+        // 2. Section completeness
+        const sectionsPresent: string[] = [];
+        const sectionsMissing: string[] = [];
+        if (resumeSpec.summary.text) sectionsPresent.push("Summary");
+        else sectionsMissing.push("Summary");
+        if (resumeSpec.experience.length > 0)
+          sectionsPresent.push(`Experience (${resumeSpec.experience.length})`);
+        else sectionsMissing.push("Experience");
+        if (resumeSpec.projects.length > 0)
+          sectionsPresent.push(`Projects (${resumeSpec.projects.length})`);
+        else sectionsMissing.push("Projects");
+        if (resumeSpec.skills.categories.length > 0)
+          sectionsPresent.push(`Skills (${resumeSpec.skills.categories.length})`);
+        else sectionsMissing.push("Skills");
+        if (resumeSpec.education.length > 0)
+          sectionsPresent.push(`Education (${resumeSpec.education.length})`);
+        else sectionsMissing.push("Education");
+
+        vChecks.push({
+          name: "Section Completeness",
+          passed: sectionsMissing.length === 0,
+          detail:
+            sectionsMissing.length === 0
+              ? `All present: ${sectionsPresent.join(", ")}`
+              : `Present: ${sectionsPresent.join(", ")}${
+                  sectionsMissing.length > 0
+                    ? ` | Missing: ${sectionsMissing.join(", ")}`
+                    : ""
+                }`,
+        });
+
+        // 3. Page count (from actual PDF measurement)
+        vChecks.push({
+          name: "Page Count",
+          passed: fitsOnePage,
+          detail: fitsOnePage
+            ? `Fits on 1 letter page (content ends at ${finalY}pt / ${pdfPageH - pdfMarginB}pt)`
+            : `Content overflows — ends at ${finalY}pt but page limit is ${pdfPageH - pdfMarginB}pt`,
+        });
+
+        // 4. LaTeX source
+        vChecks.push({
+          name: "LaTeX Source",
+          passed: true,
+          detail: ".tex source available for download",
+        });
+
+        // Build issues list from failed checks
+        const vIssues: LatexVerificationResult["issues"] = [];
+        for (const check of vChecks) {
+          if (!check.passed) {
+            vIssues.push({
+              severity: check.name === "Contact Details" ? "error" : "warning",
+              category:
+                check.name === "Contact Details"
+                  ? "missing_section"
+                  : check.name === "Page Count"
+                  ? "page_count"
+                  : "formatting",
+              message: `${check.name}: ${check.detail}`,
+            });
+          }
+        }
+
         latexVerification = {
-          passes: compileResult.success,
-          checks: [
-            {
-              name: "Rendering",
-              passed: compileResult.success,
-              detail: compileResult.success
-                ? "Resume rendered as styled HTML"
-                : "Rendering failed",
-            },
-            {
-              name: "Page Count",
-              passed: true,
-              detail: "1 page (HTML with print CSS)",
-            },
-            {
-              name: "Section Completeness",
-              passed: true,
-              detail: `All sections present: Summary, Experience (${resumeSpec.experience.length}), Projects (${resumeSpec.projects.length}), Skills (${resumeSpec.skills.categories.length}), Education (${resumeSpec.education.length})`,
-            },
-            {
-              name: "LaTeX Source",
-              passed: true,
-              detail: ".tex source available for download",
-            },
-          ],
-          issues: compileResult.success
-            ? []
-            : [
-                {
-                  severity: "error",
-                  category: "compilation",
-                  message: compileResult.log,
-                },
-              ],
-          pageCount: 1,
+          passes: vChecks.every((c) => c.passed),
+          checks: vChecks,
+          issues: vIssues,
+          pageCount: fitsOnePage ? 1 : 2,
           fixAttempts: 1,
         };
 

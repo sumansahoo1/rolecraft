@@ -330,7 +330,9 @@ Return ONLY valid JSON with this exact structure:
     "name": "string (full name from the resume)",
     "email": "string",
     "phone": "string | null",
+    "location": "string | null (city and country/region)",
     "linkedin": "string | null",
+    "github": "string | null (GitHub username or URL)",
     "portfolio": "string | null",
     "targetRole": "string (infer from the resume content or set to empty string)"
   },
