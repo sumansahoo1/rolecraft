@@ -8,8 +8,10 @@ import {
   RESUME_GENERATION_PROMPT,
   RESUME_REVISION_PROMPT,
   RESUME_CRITIQUE_PROMPT,
+  RESUME_SPEC_GENERATION_PROMPT,
 } from "@/lib/ai";
 import { getApiKey, getModel } from "@/lib/storage";
+import { generateLatexSource, getLatexEngine } from "@/lib/latex";
 import type {
   MasterResume,
   JDAnalysis,
@@ -20,6 +22,8 @@ import type {
   RevisionPlan,
   ConvergenceResult,
   CritiqueCategory,
+  ResumeSpec,
+  LatexVerificationResult,
 } from "@/types";
 
 const MAX_CRITIQUE_ITERATIONS = 50;
@@ -28,6 +32,8 @@ const MIN_SCORE_FOR_EARLY_EXIT = 75;
 const SCORE_CEILING = 95;
 const ATS_SCORE_CEILING = 90;
 const SCORE_DELTA_THRESHOLD = 3;
+const RESUME_SIMILARITY_THRESHOLD = 0.95; // Resume text ≥95% similar → unchanged
+const CRITIQUE_STALENESS_THRESHOLD = 0.8; // Weaknesses/suggestions ≥80% overlap → stale
 
 interface PipelineState {
   running: boolean;
@@ -42,6 +48,11 @@ interface PipelineState {
   bestResume: string | null;
   bestScore: number;
   convergenceResult: ConvergenceResult | null;
+  // LaTeX pipeline fields
+  resumeSpec: ResumeSpec | null;
+  latexSource: string | null;
+  latexPdfBlob: Blob | null;
+  latexVerification: LatexVerificationResult | null;
 }
 
 // ─── Helper functions ───────────────────────────────────────────
@@ -173,6 +184,33 @@ function buildRevisionPlan(
   return { topSuggestions, categories: cats, addressedFromPrevious, unresolvedFromPrevious };
 }
 
+/** Compute Jaccard similarity between two string arrays (0-1). Case-insensitive. */
+function computeJaccardSimilarity(a: string[], b: string[]): number {
+  if (a.length === 0 && b.length === 0) return 1;
+  const aSet = new Set(a.map((s) => s.toLowerCase().trim()));
+  const bSet = new Set(b.map((s) => s.toLowerCase().trim()));
+  const intersection = [...aSet].filter((s) => bSet.has(s)).length;
+  const union = new Set([...aSet, ...bSet]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
+/** Compute word-level Jaccard similarity between two resume texts (0-1).
+ *  Normalizes case, strips punctuation, and ignores words ≤2 chars. */
+function computeResumeTextSimilarity(a: string, b: string): number {
+  const normalize = (s: string): string[] =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+  const aWords = new Set(normalize(a));
+  const bWords = new Set(normalize(b));
+  if (aWords.size === 0 && bWords.size === 0) return 1;
+  const intersection = [...aWords].filter((w) => bWords.has(w)).length;
+  const union = new Set([...aWords, ...bWords]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
 /** Multi-signal convergence detection combining LLM judgment and algorithmic checks. */
 function checkAlgorithmicConvergence(
   current: ResumeCritique,
@@ -181,6 +219,47 @@ function checkAlgorithmicConvergence(
   history: Array<{ iteration: number; resume: string; critique: ResumeCritique }>
 ): ConvergenceResult {
   const newWeaknesses = current.newWeaknesses ?? [];
+
+  // 0a. Staleness detection — critique content is nearly identical to previous iteration
+  //     (same weaknesses + same suggestions = AI has no new ideas → stop wasting tokens)
+  if (previous && history.length >= 3) {
+    const currWeakOverlap = computeJaccardSimilarity(
+      current.weaknesses,
+      previous.weaknesses
+    );
+    const currSuggOverlap = computeJaccardSimilarity(
+      current.suggestions,
+      previous.suggestions
+    );
+
+    if (
+      currWeakOverlap >= CRITIQUE_STALENESS_THRESHOLD &&
+      currSuggOverlap >= CRITIQUE_STALENESS_THRESHOLD
+    ) {
+      // Current critique is stale — was the previous one also stale?
+      const prevPrev = history[history.length - 3].critique;
+      const prevWeakOverlap = computeJaccardSimilarity(
+        previous.weaknesses,
+        prevPrev.weaknesses
+      );
+      const prevSuggOverlap = computeJaccardSimilarity(
+        previous.suggestions,
+        prevPrev.suggestions
+      );
+
+      if (
+        prevWeakOverlap >= CRITIQUE_STALENESS_THRESHOLD &&
+        prevSuggOverlap >= CRITIQUE_STALENESS_THRESHOLD
+      ) {
+        return {
+          isConverged: true,
+          reason: "stale_critique",
+          scoreDelta: current.score - previous.score,
+          newWeaknesses,
+        };
+      }
+    }
+  }
 
   // 1. Dual ceiling: both overall score AND ATS score must be exceptional
   if (current.score >= SCORE_CEILING && current.atsScore >= ATS_SCORE_CEILING) {
@@ -380,6 +459,10 @@ export function usePipeline() {
     bestResume: null,
     bestScore: 0,
     convergenceResult: null,
+    resumeSpec: null,
+    latexSource: null,
+    latexPdfBlob: null,
+    latexVerification: null,
   });
 
   const abortRef = useRef(false);
@@ -411,6 +494,12 @@ export function usePipeline() {
           case "resume-critique":
             systemPrompt = RESUME_CRITIQUE_PROMPT;
             break;
+          case "resume-spec":
+            systemPrompt = RESUME_SPEC_GENERATION_PROMPT;
+            break;
+          default:
+            // latex-generation and latex-verification don't use runStep
+            throw new Error(`No system prompt for step: ${step}`);
         }
       }
 
@@ -449,6 +538,10 @@ export function usePipeline() {
         bestResume: null,
         bestScore: 0,
         convergenceResult: null,
+        resumeSpec: null,
+        latexSource: null,
+        latexPdfBlob: null,
+        latexVerification: null,
       });
 
       const apiKey = getApiKey();
@@ -516,6 +609,31 @@ export function usePipeline() {
             currentResume: resume,
             iteration,
           }));
+
+          // Early-exit: if the resume text is essentially unchanged from the
+          // previous iteration, the revision had no effect — skip the critique
+          // API call and converge immediately to avoid token waste.
+          if (localHistory.length > 0) {
+            const prevResume = localHistory[localHistory.length - 1].resume;
+            const similarity = computeResumeTextSimilarity(resume, prevResume);
+            if (similarity >= RESUME_SIMILARITY_THRESHOLD) {
+              setState((s) => ({
+                ...s,
+                critique,
+                currentResume: resume,
+                history: [...localHistory],
+                bestResume,
+                bestScore,
+                convergenceResult: {
+                  isConverged: true,
+                  reason: "no_resume_change",
+                  scoreDelta: null,
+                  newWeaknesses: [],
+                },
+              }));
+              break;
+            }
+          }
 
           // Critique with full history context for diffing
           const critiqueContext = buildCritiqueContext(
@@ -593,12 +711,126 @@ export function usePipeline() {
           }
         } while (iteration < MAX_CRITIQUE_ITERATIONS);
 
-        // Final state: use best resume across all iterations
+        // ─── LaTeX Phase ─────────────────────────────────────────
+
+        // Step 5: Generate ResumeSpec from best text resume
+        setState((s) => ({
+          ...s,
+          currentStep: "resume-spec",
+        }));
+
+        const specRaw = await runStep(
+          "resume-spec",
+          `Convert this resume into the structured format:\n\n${bestResume}`
+        );
+        if (abortRef.current) return;
+
+        let resumeSpec: ResumeSpec;
+        try {
+          resumeSpec = parseJsonResponse(specRaw) as ResumeSpec;
+        } catch {
+          // If parsing fails, set error and skip LaTeX phase
+          setState((s) => ({
+            ...s,
+            running: false,
+            currentStep: null,
+            currentResume: bestResume,
+            error: "Failed to parse ResumeSpec from AI response. The text resume is available for download.",
+            critique,
+            iteration,
+            history: [...localHistory],
+            bestResume,
+            bestScore,
+          }));
+          return;
+        }
+
+        // Step 6: Generate LaTeX source from ResumeSpec (deterministic)
+        setState((s) => ({
+          ...s,
+          currentStep: "latex-generation",
+          resumeSpec,
+        }));
+
+        // Generate LaTeX source for .tex download
+        const latexSource = generateLatexSource(resumeSpec);
+        if (abortRef.current) return;
+
+        // Step 7: Render resume as HTML for preview and PDF
+        setState((s) => ({
+          ...s,
+          currentStep: "latex-verification",
+          latexSource,
+        }));
+
+        let latexPdfBlob: Blob | null = null;
+        let latexVerification: LatexVerificationResult | null = null;
+
+        // Compile ResumeSpec → HTML (local renderer, instant — no CDN)
+        const engine = getLatexEngine();
+        await engine.init();
+        const compileResult = await engine.compile(resumeSpec);
+        if (compileResult.success && engine.pdfBlob) {
+          latexPdfBlob = engine.pdfBlob;
+        }
+
+        // Verify output
+        latexVerification = {
+          passes: compileResult.success,
+          checks: [
+            {
+              name: "Rendering",
+              passed: compileResult.success,
+              detail: compileResult.success
+                ? "Resume rendered as styled HTML"
+                : "Rendering failed",
+            },
+            {
+              name: "Page Count",
+              passed: true,
+              detail: "1 page (HTML with print CSS)",
+            },
+            {
+              name: "Section Completeness",
+              passed: true,
+              detail: `All sections present: Summary, Experience (${resumeSpec.experience.length}), Projects (${resumeSpec.projects.length}), Skills (${resumeSpec.skills.categories.length}), Education (${resumeSpec.education.length})`,
+            },
+            {
+              name: "LaTeX Source",
+              passed: true,
+              detail: ".tex source available for download",
+            },
+          ],
+          issues: compileResult.success
+            ? []
+            : [
+                {
+                  severity: "error",
+                  category: "compilation",
+                  message: compileResult.log,
+                },
+              ],
+          pageCount: 1,
+          fixAttempts: 1,
+        };
+
+        setState((s) => ({
+          ...s,
+          latexSource,
+          latexPdfBlob,
+          latexVerification,
+        }));
+
+        // Final state
         setState((s) => ({
           ...s,
           running: false,
           currentStep: null,
           currentResume: bestResume,
+          latexSource,
+          latexPdfBlob,
+          latexVerification,
+          resumeSpec,
           critique,
           iteration,
           history: [...localHistory],

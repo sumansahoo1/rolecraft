@@ -67,7 +67,10 @@ export type PipelineStep =
   | "jd-analysis"
   | "experience-mapping"
   | "resume-generation"
-  | "resume-critique";
+  | "resume-critique"
+  | "resume-spec"
+  | "latex-generation"
+  | "latex-verification";
 
 export interface JDAnalysis {
   roleTitle: string;
@@ -135,9 +138,74 @@ export interface ConvergenceResult {
     | "score_ceiling"
     | "score_delta"
     | "no_new_weaknesses"
+    | "no_resume_change"
+    | "stale_critique"
     | "max_iterations";
   scoreDelta: number | null;
   newWeaknesses: string[];
+}
+
+// ─── LaTeX / ResumeSpec Types ───────────────────────────────
+
+export interface ResumeSpec {
+  meta: {
+    name: string;
+    email: string;
+    phone?: string;
+    linkedin?: string;
+    portfolio?: string;
+    targetRole: string;
+  };
+  summary: {
+    text: string;
+  };
+  skills: {
+    categories: Array<{
+      name: string;
+      items: string[];
+    }>;
+  };
+  experience: Array<{
+    company: string;
+    role: string;
+    dates: string;
+    bullets: string[];
+    featured: boolean;
+  }>;
+  projects: Array<{
+    name: string;
+    bullets: string[];
+  }>;
+  education: Array<{
+    institution: string;
+    degree: string;
+    field: string;
+    year: string;
+  }>;
+  optionalSections?: Array<{
+    heading: string;
+    items: string[];
+  }>;
+}
+
+export interface LatexVerificationCheck {
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface LatexVerificationIssue {
+  severity: "error" | "warning";
+  category: "compilation" | "page_count" | "missing_section" | "font" | "overflow" | "formatting";
+  message: string;
+}
+
+export interface LatexVerificationResult {
+  passes: boolean;
+  checks: LatexVerificationCheck[];
+  issues: LatexVerificationIssue[];
+  pageCount: number | null;
+  fixAttempts: number;
 }
 
 // ─── Pipeline State ────────────────────────────────────────
@@ -159,6 +227,11 @@ export interface PipelineState {
   bestResume: string | null;
   bestScore: number;
   convergenceResult: ConvergenceResult | null;
+  // LaTeX pipeline fields
+  resumeSpec: ResumeSpec | null;
+  latexSource: string | null;
+  latexPdfBlob: Blob | null;
+  latexVerification: LatexVerificationResult | null;
 }
 
 // ─── Storage ────────────────────────────────────────────────
