@@ -41,6 +41,7 @@ export default function ResumePage() {
       handleExtract(rawText);
     } else {
       reset();
+      setSaved(null);
     }
   };
 

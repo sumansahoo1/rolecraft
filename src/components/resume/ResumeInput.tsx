@@ -45,7 +45,7 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Tabs defaultValue="paste">
+      <Tabs defaultValue="upload">
         <TabsList className="w-full">
           <TabsTrigger value="paste" className="flex-1">
             Paste Text
@@ -95,7 +95,7 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
           </div>
           {text && (
             <Textarea
-              className="mt-4 min-h-[120px] resize-y font-mono text-sm"
+              className="mt-4 max-h-[160px] min-h-[80px] resize-y overflow-y-auto font-mono text-sm"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
