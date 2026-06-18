@@ -5,6 +5,42 @@
  * can be parsed and used in the next pipeline step.
  */
 
+export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extract structured information from the raw resume text provided. Return ONLY valid JSON with this exact structure:
+{
+  "name": "string",
+  "email": "string",
+  "phone": "string | null",
+  "linkedin": "string | null",
+  "portfolio": "string | null",
+  "summary": "string (professional summary, 2-3 sentences)",
+  "skills": ["string"],
+  "experience": [
+    {
+      "company": "string",
+      "role": "string",
+      "duration": "string (e.g. 'Jan 2020 - Mar 2023')",
+      "highlights": ["string (achievement-oriented bullet points)"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "string",
+      "degree": "string",
+      "field": "string",
+      "year": "string"
+    }
+  ],
+  "certifications": ["string"] | null,
+  "projects": ["string"] | null
+}
+
+Rules:
+- Infer missing fields as null, never fabricate data.
+- For skills, include both technical and soft skills mentioned.
+- For experience highlights, preserve quantifiable achievements (numbers, percentages).
+- Keep the original wording but clean up formatting artifacts.
+- If the text is not a valid resume, return null for all string fields.`;
+
 export const JD_ANALYSIS_PROMPT = `You are an expert job description analyst. Analyze the given job description and extract structured information. Return ONLY valid JSON with this exact structure:
 {
   "roleTitle": "string",

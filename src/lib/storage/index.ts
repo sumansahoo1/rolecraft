@@ -2,6 +2,8 @@ export {
   getApiKey,
   setApiKey,
   clearApiKey,
+  getModel,
+  setModel,
   getMasterResume,
   setMasterResume,
   clearMasterResume,

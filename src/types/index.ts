@@ -1,3 +1,7 @@
+// ─── AI Provider ────────────────────────────────────────────
+
+export type DeepSeekModel = "deepseek-chat" | "deepseek-flash";
+
 // ─── Resume Data ────────────────────────────────────────────
 
 export interface Experience {
@@ -86,6 +90,7 @@ export interface PipelineState {
 
 export interface StoredData {
   apiKey?: string;
+  model?: DeepSeekModel;
   masterResume?: MasterResume;
   preferences?: {
     tone?: "professional" | "casual" | "technical";

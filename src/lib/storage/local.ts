@@ -6,10 +6,11 @@
  * directly from the browser to the AI provider.
  */
 
-import type { StoredData, MasterResume } from "@/types";
+import type { StoredData, MasterResume, DeepSeekModel } from "@/types";
 
 const KEYS = {
   apiKey: "rolecraft_api_key",
+  model: "rolecraft_model",
   masterResume: "rolecraft_master_resume",
   preferences: "rolecraft_preferences",
 } as const;
@@ -27,6 +28,17 @@ export function setApiKey(key: string): void {
 
 export function clearApiKey(): void {
   localStorage.removeItem(KEYS.apiKey);
+}
+
+// ─── Model ───────────────────────────────────────────────────
+
+export function getModel(): DeepSeekModel {
+  if (typeof window === "undefined") return "deepseek-chat";
+  return (localStorage.getItem(KEYS.model) as DeepSeekModel) ?? "deepseek-chat";
+}
+
+export function setModel(model: DeepSeekModel): void {
+  localStorage.setItem(KEYS.model, model);
 }
 
 // ─── Master Resume ──────────────────────────────────────────
@@ -74,6 +86,7 @@ export function setPreferences(
 export function getAllStoredData(): Partial<StoredData> {
   return {
     apiKey: getApiKey() ?? undefined,
+    model: getModel(),
     masterResume: getMasterResume() ?? undefined,
     preferences: getPreferences() ?? undefined,
   };
