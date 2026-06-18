@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Download,
   FileCode,
+  Printer,
   SplitSquareVertical,
   PanelLeft,
   PanelRight,
@@ -11,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import LaTeXPreview from "./LaTeXPreview";
-import { downloadTex, downloadLatexPdf, copyToClipboard } from "@/lib/export";
+import { downloadTex, copyToClipboard } from "@/lib/export";
 import { renderResumeHtml } from "@/lib/latex/render";
 
 interface LaTeXEditorProps {
@@ -71,9 +72,20 @@ export default function LaTeXEditor({
     }
   };
 
-  const handleDownloadPdf = async () => {
-    if (resumeSpec) {
-      await downloadLatexPdf(resumeSpec);
+  const handlePrintPdf = () => {
+    // Use the SAME HTML as the preview — guarantees identical output
+    if (htmlBlob) {
+      const url = URL.createObjectURL(htmlBlob);
+      const w = window.open(url, "_blank");
+      if (w) {
+        w.onload = () => {
+          // Set empty title to minimize browser header text
+          try { w.document.title = ""; } catch { /* cross-origin */ }
+          w.print();
+        };
+        // Clean up after print dialog closes (typical: 2 min max)
+        setTimeout(() => URL.revokeObjectURL(url), 120000);
+      }
     }
   };
 
@@ -130,14 +142,15 @@ export default function LaTeXEditor({
             </button>
           </div>
 
-          {/* Download PDF button */}
+          {/* Print button — uses same HTML as preview for pixel-identical output */}
           <button
-            onClick={handleDownloadPdf}
-            disabled={!resumeSpec}
+            onClick={handlePrintPdf}
+            disabled={!htmlBlob}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Save as PDF — uncheck 'Headers and footers' in the print dialog"
           >
-            <Download className="h-3.5 w-3.5" />
-            PDF
+            <Printer className="h-3.5 w-3.5" />
+            Save PDF
           </button>
 
           {/* Download .tex */}
