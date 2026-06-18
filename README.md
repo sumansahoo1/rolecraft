@@ -1,172 +1,76 @@
-# 🌀 RoleCraft
+# RoleCraft
 
-**AI-powered resume builder that converges on perfection.**
+An agentic resume builder. Give it your master resume and a job description. It analyzes, maps, generates, then loops — critique, revise, critique, revise — until the AI can't find anything left to improve. Everything runs client-side.
 
-Paste a job description, supply your master resume, and RoleCraft runs a
-four-step AI pipeline — JD analysis → experience mapping → resume generation
-→ critique loop — until the resume is optimized for the role.
+## The idea
 
----
+LLM-generated resumes are mediocre on the first pass. A human doesn't write a resume once — they draft, review, notice weak spots, fix them, re-read, tweak again. This project gives that loop to an AI.
 
-## The Idea
-
-Most resume builders are templates with a GPT wrapper. RoleCraft is
-different — it's a **convergent optimization loop**:
+The pipeline:
 
 ```
-JD → [Analyze] → Experience Map → [Generate] → Resume → [Critique] → Fix → [Critique] → Fix → … → ✅ Done
-                                      ↑_____________________________________________↓ (loop until converged)
+JD Analysis → Experience Mapping → Resume Generation
+                ↑                        ↓
+                └──── Critique Loop ◄─────┘
+                     (scores, finds weaknesses,
+                      rewrites weak sections,
+                      checks if it's actually
+                      better, repeats)
+                         ↓
+                    LaTeX output
 ```
 
-| Step | What it does |
-|------|-------------|
-| **JD Analysis** | Extracts skills, responsibilities, level, and keywords from the job description |
-| **Experience Mapping** | Compares your master resume against the JD — finds matches, gaps, and fit score |
-| **Resume Generation** | Crafts a tailored resume optimized for the role and ATS systems |
-| **Critique Loop** | Reviews the generated resume, suggests fixes, regenerates, repeats until score ≥ 85 and stable |
-| **Final Output** | A polished, role-specific resume ready to download |
+The AI critiques its own output as a senior hiring manager would — scoring across ATS compatibility, relevance, impact quantification, clarity, career progression, and authenticity. It tracks recurring weaknesses so it doesn't chase its own tail. It keeps the best-scoring version, not just the last one.
 
-### Why "Convergent"?
+It converges when: score hits 95, or improvements stagnate for 2 rounds, or the critique becomes ~identical to the previous one (≥80% Jaccard), or no new weaknesses appear and score ≥ 75.
 
-One-shot AI resumes are mediocre. The critique loop mimics how a human
-expert would iterate — get feedback, fix, repeat. RoleCraft keeps looping
-until the AI itself agrees the resume meets the bar (score ≥ 85 / 100 with
-convergence flag set).
+Worst case it stops after 50 iterations. Usually it's done in 4–7.
 
----
+## A few things about how it's built
 
-## Architecture
+- **100% client-side.** No server, no proxy, no database. Your API key and resume sit in `localStorage`. Browser talks directly to DeepSeek. You can verify this in the network tab.
+- **7 distinct prompts**, each with a specific job. The critique prompt alone is ~200 lines — it has to think like a hiring manager, not a chatbot.
+- **The convergence logic is explicit**, not just asking the LLM "are we done?" It cross-checks staleness, score ceilings, delta stagnation, and LLM self-judgment.
+- **LaTeX output** via a deterministic template (not LLM-generated `.tex` — those hallucinate). Compiles to a 1-page letter-size document with proper typesetting.
+- **Everything is typed.** Full TypeScript interfaces for the pipeline state, resume structure, critique results, and LaTeX spec.
 
-**100% client-side.** Nothing is sent to any backend.
-
-```
-┌─────────────────────────────────────────┐
-│              Browser (Next.js)           │
-│                                          │
-│  localStorage                            │
-│  ├─ Master Resume (JSON)                 │
-│  ├─ API Key (your own key)               │
-│  └─ Preferences                          │
-│                                          │
-│  ┌─────────────┐    ┌─────────────────┐  │
-│  │  Pipeline    │───→│  AI Provider    │  │
-│  │  Controller  │    │  (OpenAI/       │  │
-│  │              │←───│   Anthropic/    │  │
-│  │  Critique    │    │   Google/       │  │
-│  │  Loop Engine │    │   OpenRouter)   │  │
-│  └─────────────┘    └─────────────────┘  │
-└─────────────────────────────────────────┘
-```
-
-- **Next.js 16** with App Router (static export compatible)
-- **Tailwind CSS v4** for styling
-- **TypeScript** throughout
-- **lucide-react** for icons
-- AI calls go **directly from the browser** to your chosen provider
-
-### Storage Strategy
-
-| Data | Where | Why |
-|------|-------|-----|
-| API Key | `localStorage` | You keep control. No server-side key storage. |
-| Master Resume | `localStorage` | Structured JSON. Survives sessions. ~5MB limit is plenty for text. |
-| Pipeline State | React state | Ephemeral per session. Reset on reload. |
-| Preferences | `localStorage` | Tone, format, model choice. |
-
-> **Why not a database?** RoleCraft is intentionally no-backend. Your resume
-> and API key never touch a server. If you want persistence across devices,
-> the master resume can be exported/imported as a JSON file.
-
----
-
-## Getting Started
+## Quick start
 
 ```bash
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
+git clone https://github.com/sumansahoo1/rolecraft.git
+cd rolecraft && npm install && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+You'll need a [DeepSeek API key](https://platform.deepseek.com/api_keys). Paste it in Settings, upload your resume, paste a JD, hit Generate.
 
----
+## Stack
 
-## Project Structure
+Next.js 16 · TypeScript · Tailwind CSS v4 · shadcn/ui · DeepSeek · pdfjs-dist · mammoth · jsPDF · LaTeX
+
+## Structure
 
 ```
 src/
-├── app/
-│   ├── layout.tsx        # Root layout (fonts, metadata)
-│   ├── page.tsx          # Landing page
-│   ├── globals.css       # Tailwind + theme vars
-│   └── app/
-│       ├── layout.tsx    # App layout
-│       └── page.tsx      # Builder page (TBD)
-├── components/
-│   ├── ui/               # Reusable UI primitives
-│   └── layout/           # Layout components
-├── lib/
-│   ├── ai/
-│   │   ├── provider.ts   # AI provider API calls
-│   │   ├── prompts.ts    # System prompts for each step
-│   │   └── index.ts
-│   ├── storage/
-│   │   ├── local.ts      # localStorage helpers
-│   │   └── index.ts
-│   └── utils/
-│       └── index.ts
-└── types/
-    └── index.ts          # All TypeScript types
+  app/app/
+    builder/      # Pipeline orchestration
+    resume/       # Master resume editor + AI extraction from PDF/DOCX
+    settings/     # API key + model selection
+  hooks/
+    usePipeline.ts   # State machine, critique loop, convergence checks
+  lib/
+    ai/
+      prompts.ts     # 7 system prompts (the interesting part)
+      provider.ts    # Single createChatCompletion() → DeepSeek
+    latex/           # Template, browser renderer, verification
+    export/          # TXT, DOCX, PDF, .tex
+    parse/           # PDF + DOCX text extraction
+    storage/         # localStorage wrappers
+  components/
+    pipeline/        # CritiquePanel, LaTeXEditor, ResumeDisplay, etc.
+  types/             # All TS interfaces
 ```
 
----
-
-## Configuration
-
-### API Key
-
-You need an API key from one of the supported providers:
-
-| Provider | Models | Recommended |
-|----------|--------|-------------|
-| [OpenAI](https://platform.openai.com/api-keys) | `gpt-4o`, `gpt-4o-mini` | ✅ Best for structured output |
-| [Anthropic](https://console.anthropic.com/) | `claude-sonnet-4`, `claude-haiku-3` | Great for long context |
-| [Google](https://ai.google.dev/) | `gemini-2.0-flash`, `gemini-2.5-pro` | Free tier available |
-| [OpenRouter](https://openrouter.ai/) | All of the above + more | Single key for multiple models |
-
-The key is stored in your browser's `localStorage` and sent directly to the
-provider. **RoleCraft never sees or stores your key.**
-
----
-
-## Master Resume Storage — Options
-
-Since you asked "how to store it permanently as a website":
-
-1. **localStorage** (current) — Simple, persists across sessions, works offline. Good for an MVP. Export/import JSON as backup.
-
-2. **IndexedDB** — More robust, can handle larger data, binary attachments (profile photos). Better for long-term use.
-
-3. **File-based** — Store as a `.json` file. User uploads their master resume each session. Cleanest for privacy, simplest to implement.
-
-4. **Cloud sync** (future) — If you want multi-device access, add optional sync to GitHub Gist, Google Drive, or a simple backend. **API key should always stay client-side.**
-
-**Recommendation for MVP:** Start with `localStorage` + JSON export/import. It's instant, private, and zero infrastructure.
-
----
-
-## Future Ideas
-
-- [ ] PDF export (with formatting)
-- [ ] ATS score simulation
-- [ ] Multiple resume variants (one master → many tailored resumes)
-- [ ] Cover letter generation
-- [ ] Interview question predictor (based on JD analysis)
-- [ ] Claude Code / Cursor rules for AI-assisted development
-
----
+The logic lives in `src/hooks/usePipeline.ts` and `src/lib/ai/prompts.ts`. Start there.
 
 ## License
 
