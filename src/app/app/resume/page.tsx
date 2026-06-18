@@ -23,8 +23,10 @@ export default function ResumePage() {
   const [saved, setSaved] = useState<MasterResume | null>(
     () => getMasterResume()
   );
+  const [rawText, setRawText] = useState<string | null>(null);
 
   const handleExtract = async (text: string) => {
+    setRawText(text);
     const apiKey = getApiKey();
     if (!apiKey) {
       toast.error("Set your DeepSeek API key in Settings first");
@@ -32,6 +34,14 @@ export default function ResumePage() {
       return;
     }
     await extract(text);
+  };
+
+  const handleReExtract = () => {
+    if (rawText) {
+      handleExtract(rawText);
+    } else {
+      reset();
+    }
   };
 
   const handleSave = (resume: MasterResume) => {
@@ -43,6 +53,7 @@ export default function ResumePage() {
   const handleImport = (resume: MasterResume) => {
     setMasterResume(resume);
     setSaved(resume);
+    setRawText(null);
   };
 
   const displayResume = result ?? saved;
@@ -53,7 +64,7 @@ export default function ResumePage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Master Resume</h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground" suppressHydrationWarning>
               {saved
                 ? "Extracted and saved. You can edit anytime."
                 : "Paste or upload your resume to extract structured data."}
@@ -87,7 +98,7 @@ export default function ResumePage() {
             <ResumeEditor
               initial={displayResume}
               onSave={handleSave}
-              onReExtract={reset}
+              onReExtract={handleReExtract}
             />
 
             {saved && (

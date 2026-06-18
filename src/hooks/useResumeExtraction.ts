@@ -3,12 +3,70 @@
 import { useState, useCallback } from "react";
 import { createChatCompletion, RESUME_EXTRACTION_PROMPT } from "@/lib/ai";
 import { getApiKey, getModel } from "@/lib/storage";
-import type { MasterResume } from "@/types";
+import type { MasterResume, Project, OpenSource, OtherWork } from "@/types";
 
 interface ExtractionState {
   loading: boolean;
   error: string | null;
   result: MasterResume | null;
+}
+
+function parseProjects(raw: unknown): Project[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  if (raw.length === 0) return undefined;
+  return raw.map((item: unknown) => {
+    if (typeof item === "string") {
+      return { name: item, description: "" };
+    }
+    const p = item as Record<string, unknown>;
+    return {
+      name: String(p.name ?? ""),
+      description: String(p.description ?? ""),
+      url: p.url ? String(p.url) : undefined,
+      technologies: Array.isArray(p.technologies)
+        ? p.technologies.map(String)
+        : undefined,
+      duration: p.duration ? String(p.duration) : undefined,
+      highlights: Array.isArray(p.highlights)
+        ? p.highlights.map(String)
+        : undefined,
+    };
+  });
+}
+
+function parseOpenSource(raw: unknown): OpenSource[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  if (raw.length === 0) return undefined;
+  return raw.map((item: unknown) => {
+    const o = item as Record<string, unknown>;
+    return {
+      name: String(o.name ?? ""),
+      description: String(o.description ?? ""),
+      url: o.url ? String(o.url) : undefined,
+      role: o.role ? String(o.role) : undefined,
+      technologies: Array.isArray(o.technologies)
+        ? o.technologies.map(String)
+        : undefined,
+      highlights: Array.isArray(o.highlights)
+        ? o.highlights.map(String)
+        : undefined,
+    };
+  });
+}
+
+function parseOtherWorks(raw: unknown): OtherWork[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  if (raw.length === 0) return undefined;
+  return raw.map((item: unknown) => {
+    const w = item as Record<string, unknown>;
+    return {
+      title: String(w.title ?? ""),
+      type: String(w.type ?? "other"),
+      description: String(w.description ?? ""),
+      url: w.url ? String(w.url) : undefined,
+      date: w.date ? String(w.date) : undefined,
+    };
+  });
 }
 
 export function useResumeExtraction() {
@@ -72,7 +130,9 @@ export function useResumeExtraction() {
         certifications: Array.isArray(raw.certifications)
           ? raw.certifications
           : null,
-        projects: Array.isArray(raw.projects) ? raw.projects : null,
+        projects: parseProjects(raw.projects),
+        openSource: parseOpenSource(raw.openSource),
+        otherWorks: parseOtherWorks(raw.otherWorks),
       };
 
       setState({ loading: false, error: null, result: parsed });

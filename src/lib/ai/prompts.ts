@@ -5,7 +5,7 @@
  * can be parsed and used in the next pipeline step.
  */
 
-export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extract structured information from the raw resume text provided. Return ONLY valid JSON with this exact structure:
+export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extract structured information from the raw resume text provided. Be exhaustive and capture EVERY detail — maximize the information extracted so it can later be selectively used to tailor resumes for specific roles. Return ONLY valid JSON with this exact structure:
 {
   "name": "string",
   "email": "string",
@@ -31,13 +31,44 @@ export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extrac
     }
   ],
   "certifications": ["string"] | null,
-  "projects": ["string"] | null
+  "projects": [
+    {
+      "name": "string (project name)",
+      "description": "string (what it does, purpose, scope)",
+      "url": "string | null (GitHub link, live demo, etc.)",
+      "technologies": ["string"] | null (languages, frameworks, tools used),
+      "duration": "string | null (e.g. 'Jan 2023 - Mar 2023')",
+      "highlights": ["string"] | null (key achievements, metrics, contributions)
+    }
+  ] | null,
+  "openSource": [
+    {
+      "name": "string (repository or project name)",
+      "description": "string (what you contributed, the impact)",
+      "url": "string | null (GitHub PR/issue/repo link)",
+      "role": "string | null (e.g. maintainer, contributor, core team)",
+      "technologies": ["string"] | null,
+      "highlights": ["string"] | null (specific contributions, merged PRs, stars, etc.)
+    }
+  ] | null,
+  "otherWorks": [
+    {
+      "title": "string (title of the work)",
+      "type": "string (one of: publication, speaking, patent, award, volunteering, language, other)",
+      "description": "string",
+      "url": "string | null",
+      "date": "string | null"
+    }
+  ] | null
 }
 
 Rules:
 - Infer missing fields as null, never fabricate data.
-- For skills, include both technical and soft skills mentioned.
-- For experience highlights, preserve quantifiable achievements (numbers, percentages).
+- For skills, include both technical and soft skills mentioned — be exhaustive.
+- For experience highlights, preserve all quantifiable achievements (numbers, percentages, scale).
+- For projects, capture EVERY project mentioned anywhere in the resume (personal projects, academic projects, hackathons, freelance work, side projects). Extract as much detail as possible: the project name, a description of what it does, the URL if provided, all technologies listed, the duration if mentioned, and bullet-point highlights of achievements.
+- For openSource, capture ALL open source contributions mentioned — repositories contributed to, maintained projects, significant pull requests, community involvement. Include the repo/project name, description of contributions, URLs, your role, and technologies.
+- For otherWorks, capture ALL additional work: publications (papers, articles, blog posts), speaking engagements (conference talks, meetups, workshops), patents, awards and honors, volunteering experience, languages spoken, and any other notable work. Set the "type" field to the most appropriate category.
 - Keep the original wording but clean up formatting artifacts.
 - If the text is not a valid resume, return null for all string fields.`;
 

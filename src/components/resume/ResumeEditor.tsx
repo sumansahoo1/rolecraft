@@ -9,7 +9,31 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import type { MasterResume, Experience, Education } from "@/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type {
+  MasterResume,
+  Experience,
+  Education,
+  Project,
+  OpenSource,
+  OtherWork,
+} from "@/types";
+
+const OTHER_WORK_TYPES = [
+  "publication",
+  "speaking",
+  "patent",
+  "award",
+  "volunteering",
+  "language",
+  "other",
+] as const;
 
 interface ResumeEditorProps {
   initial: MasterResume;
@@ -25,12 +49,38 @@ function emptyEducation(): Education {
   return { institution: "", degree: "", field: "", year: "" };
 }
 
+function emptyProject(): Project {
+  return { name: "", description: "" };
+}
+
+function emptyOpenSource(): OpenSource {
+  return { name: "", description: "" };
+}
+
+function emptyOtherWork(): OtherWork {
+  return { title: "", type: "other", description: "" };
+}
+
+function migrateProjects(
+  projects: unknown | undefined,
+): Project[] | undefined {
+  if (!Array.isArray(projects)) return undefined;
+  if (projects.length === 0) return undefined;
+  if (typeof projects[0] === "string") {
+    return (projects as string[]).map((s) => ({ name: s, description: "" }));
+  }
+  return projects as Project[];
+}
+
 export function ResumeEditor({
   initial,
   onSave,
   onReExtract,
 }: ResumeEditorProps) {
-  const [resume, setResume] = useState<MasterResume>(initial);
+  const [resume, setResume] = useState<MasterResume>({
+    ...initial,
+    projects: migrateProjects(initial.projects),
+  });
   const [skillInput, setSkillInput] = useState("");
 
   const update = (field: keyof MasterResume, value: unknown) => {
@@ -102,6 +152,172 @@ export function ResumeEditor({
   const removeEducation = (idx: number) => {
     update("education", resume.education.filter((_, i) => i !== idx));
   };
+
+  // ─── Projects ──────────────────────────────────────────────
+
+  const updateProject = (idx: number, proj: Project) => {
+    const updated = [...(resume.projects ?? [])];
+    updated[idx] = proj;
+    update("projects", updated);
+  };
+
+  const addProject = () => {
+    update("projects", [...(resume.projects ?? []), emptyProject()]);
+  };
+
+  const removeProject = (idx: number) => {
+    update("projects", (resume.projects ?? []).filter((_, i) => i !== idx));
+  };
+
+  const updateProjectHighlight = (
+    projIdx: number,
+    hlIdx: number,
+    value: string,
+  ) => {
+    const updated = [...(resume.projects ?? [])];
+    const highlights = [...(updated[projIdx].highlights ?? [])];
+    highlights[hlIdx] = value;
+    updated[projIdx] = { ...updated[projIdx], highlights };
+    update("projects", updated);
+  };
+
+  const addProjectHighlight = (projIdx: number) => {
+    const updated = [...(resume.projects ?? [])];
+    updated[projIdx] = {
+      ...updated[projIdx],
+      highlights: [...(updated[projIdx].highlights ?? []), ""],
+    };
+    update("projects", updated);
+  };
+
+  const removeProjectHighlight = (projIdx: number, hlIdx: number) => {
+    const updated = [...(resume.projects ?? [])];
+    updated[projIdx] = {
+      ...updated[projIdx],
+      highlights: (updated[projIdx].highlights ?? []).filter(
+        (_, i) => i !== hlIdx,
+      ),
+    };
+    update("projects", updated);
+  };
+
+  const addProjectTech = (projIdx: number, tech: string) => {
+    const updated = [...(resume.projects ?? [])];
+    const current = updated[projIdx].technologies ?? [];
+    if (tech && !current.includes(tech)) {
+      updated[projIdx] = {
+        ...updated[projIdx],
+        technologies: [...current, tech],
+      };
+      update("projects", updated);
+    }
+  };
+
+  const removeProjectTech = (projIdx: number, tech: string) => {
+    const updated = [...(resume.projects ?? [])];
+    updated[projIdx] = {
+      ...updated[projIdx],
+      technologies: (updated[projIdx].technologies ?? []).filter(
+        (t) => t !== tech,
+      ),
+    };
+    update("projects", updated);
+  };
+
+  // ─── Open Source ───────────────────────────────────────────
+
+  const updateOpenSource = (idx: number, os: OpenSource) => {
+    const updated = [...(resume.openSource ?? [])];
+    updated[idx] = os;
+    update("openSource", updated);
+  };
+
+  const addOpenSource = () => {
+    update("openSource", [...(resume.openSource ?? []), emptyOpenSource()]);
+  };
+
+  const removeOpenSource = (idx: number) => {
+    update("openSource",
+      (resume.openSource ?? []).filter((_, i) => i !== idx),
+    );
+  };
+
+  const updateOpenSourceHighlight = (
+    osIdx: number,
+    hlIdx: number,
+    value: string,
+  ) => {
+    const updated = [...(resume.openSource ?? [])];
+    const highlights = [...(updated[osIdx].highlights ?? [])];
+    highlights[hlIdx] = value;
+    updated[osIdx] = { ...updated[osIdx], highlights };
+    update("openSource", updated);
+  };
+
+  const addOpenSourceHighlight = (osIdx: number) => {
+    const updated = [...(resume.openSource ?? [])];
+    updated[osIdx] = {
+      ...updated[osIdx],
+      highlights: [...(updated[osIdx].highlights ?? []), ""],
+    };
+    update("openSource", updated);
+  };
+
+  const removeOpenSourceHighlight = (osIdx: number, hlIdx: number) => {
+    const updated = [...(resume.openSource ?? [])];
+    updated[osIdx] = {
+      ...updated[osIdx],
+      highlights: (updated[osIdx].highlights ?? []).filter(
+        (_, i) => i !== hlIdx,
+      ),
+    };
+    update("openSource", updated);
+  };
+
+  const addOpenSourceTech = (osIdx: number, tech: string) => {
+    const updated = [...(resume.openSource ?? [])];
+    const current = updated[osIdx].technologies ?? [];
+    if (tech && !current.includes(tech)) {
+      updated[osIdx] = {
+        ...updated[osIdx],
+        technologies: [...current, tech],
+      };
+      update("openSource", updated);
+    }
+  };
+
+  const removeOpenSourceTech = (osIdx: number, tech: string) => {
+    const updated = [...(resume.openSource ?? [])];
+    updated[osIdx] = {
+      ...updated[osIdx],
+      technologies: (updated[osIdx].technologies ?? []).filter(
+        (t) => t !== tech,
+      ),
+    };
+    update("openSource", updated);
+  };
+
+  // ─── Other Works ───────────────────────────────────────────
+
+  const updateOtherWork = (idx: number, ow: OtherWork) => {
+    const updated = [...(resume.otherWorks ?? [])];
+    updated[idx] = ow;
+    update("otherWorks", updated);
+  };
+
+  const addOtherWork = () => {
+    update("otherWorks", [...(resume.otherWorks ?? []), emptyOtherWork()]);
+  };
+
+  const removeOtherWork = (idx: number) => {
+    update("otherWorks",
+      (resume.otherWorks ?? []).filter((_, i) => i !== idx),
+    );
+  };
+
+  const projects = resume.projects ?? [];
+  const openSource = resume.openSource ?? [];
+  const otherWorks = resume.otherWorks ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -328,7 +544,7 @@ export function ResumeEditor({
         </CardContent>
       </Card>
 
-      {/* Certifications & Projects */}
+      {/* Certifications */}
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
           <div className="flex flex-col gap-1.5">
@@ -342,28 +558,383 @@ export function ResumeEditor({
                   e.target.value
                     .split("\n")
                     .map((s) => s.trim())
-                    .filter(Boolean)
+                    .filter(Boolean),
                 )
               }
             />
           </div>
-          <Separator />
-          <div className="flex flex-col gap-1.5">
-            <Label>Projects (one per line)</Label>
-            <Textarea
-              className="min-h-[60px] resize-y"
-              value={resume.projects?.join("\n") ?? ""}
-              onChange={(e) =>
-                update(
-                  "projects",
-                  e.target.value
-                    .split("\n")
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                )
-              }
-            />
+        </CardContent>
+      </Card>
+
+      {/* Projects */}
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-4">
+          <div className="flex items-center justify-between">
+            <Label>Projects</Label>
+            <Button variant="outline" size="sm" onClick={addProject}>
+              <Plus className="mr-1 size-3.5" /> Add
+            </Button>
           </div>
+          {projects.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No projects yet. Add personal projects, hackathons, freelance work, or side projects.
+            </p>
+          )}
+          {projects.map((proj, i) => (
+            <div key={i} className="rounded-lg border p-4">
+              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Project Name</Label>
+                  <Input
+                    value={proj.name ?? ""}
+                    onChange={(e) =>
+                      updateProject(i, { ...proj, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">URL</Label>
+                  <Input
+                    value={proj.url ?? ""}
+                    placeholder="https://..."
+                    onChange={(e) =>
+                      updateProject(i, {
+                        ...proj,
+                        url: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    className="min-h-[50px] resize-y"
+                    value={proj.description ?? ""}
+                    onChange={(e) =>
+                      updateProject(i, { ...proj, description: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Duration</Label>
+                  <Input
+                    value={proj.duration ?? ""}
+                    placeholder="e.g. Jan 2023 - Mar 2023"
+                    onChange={(e) =>
+                      updateProject(i, {
+                        ...proj,
+                        duration: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs">Technologies</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {(proj.technologies ?? []).map((tech) => (
+                    <Badge
+                      key={tech}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {tech}
+                      <button
+                        onClick={() => removeProjectTech(i, tech)}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                      >
+                        <Trash2 className="size-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <AddTagInput
+                  placeholder="Add technology..."
+                  onAdd={(val) => addProjectTech(i, val)}
+                />
+              </div>
+
+              <Separator className="my-3" />
+
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs">Highlights</Label>
+                {(proj.highlights ?? []).map((hl, j) => (
+                  <div key={j} className="flex gap-2">
+                    <Input
+                      value={hl ?? ""}
+                      placeholder="Key achievement or contribution..."
+                      onChange={(e) =>
+                        updateProjectHighlight(i, j, e.target.value)
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeProjectHighlight(i, j)}
+                      className="shrink-0"
+                    >
+                      <Trash2 className="size-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => addProjectHighlight(i)}
+                  className="w-fit"
+                >
+                  <Plus className="mr-1 size-3.5" /> Add highlight
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeProject(i)}
+                className="mt-2 text-destructive"
+              >
+                <Trash2 className="mr-1 size-3.5" /> Remove
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Open Source */}
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-4">
+          <div className="flex items-center justify-between">
+            <Label>Open Source</Label>
+            <Button variant="outline" size="sm" onClick={addOpenSource}>
+              <Plus className="mr-1 size-3.5" /> Add
+            </Button>
+          </div>
+          {openSource.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No open source contributions yet. Add repositories you maintain, contribute to, or significant PRs.
+            </p>
+          )}
+          {openSource.map((os, i) => (
+            <div key={i} className="rounded-lg border p-4">
+              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Name</Label>
+                  <Input
+                    value={os.name ?? ""}
+                    onChange={(e) =>
+                      updateOpenSource(i, { ...os, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">URL</Label>
+                  <Input
+                    value={os.url ?? ""}
+                    placeholder="https://..."
+                    onChange={(e) =>
+                      updateOpenSource(i, {
+                        ...os,
+                        url: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Role</Label>
+                  <Input
+                    value={os.role ?? ""}
+                    placeholder="e.g. maintainer, contributor"
+                    onChange={(e) =>
+                      updateOpenSource(i, {
+                        ...os,
+                        role: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    className="min-h-[50px] resize-y"
+                    value={os.description ?? ""}
+                    onChange={(e) =>
+                      updateOpenSource(i, {
+                        ...os,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs">Technologies</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {(os.technologies ?? []).map((tech) => (
+                    <Badge
+                      key={tech}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {tech}
+                      <button
+                        onClick={() => removeOpenSourceTech(i, tech)}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                      >
+                        <Trash2 className="size-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <AddTagInput
+                  placeholder="Add technology..."
+                  onAdd={(val) => addOpenSourceTech(i, val)}
+                />
+              </div>
+
+              <Separator className="my-3" />
+
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs">Highlights</Label>
+                {(os.highlights ?? []).map((hl, j) => (
+                  <div key={j} className="flex gap-2">
+                    <Input
+                      value={hl ?? ""}
+                      placeholder="Key contribution or impact..."
+                      onChange={(e) =>
+                        updateOpenSourceHighlight(i, j, e.target.value)
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeOpenSourceHighlight(i, j)}
+                      className="shrink-0"
+                    >
+                      <Trash2 className="size-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => addOpenSourceHighlight(i)}
+                  className="w-fit"
+                >
+                  <Plus className="mr-1 size-3.5" /> Add highlight
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeOpenSource(i)}
+                className="mt-2 text-destructive"
+              >
+                <Trash2 className="mr-1 size-3.5" /> Remove
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Other Works */}
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-4">
+          <div className="flex items-center justify-between">
+            <Label>Other Works</Label>
+            <Button variant="outline" size="sm" onClick={addOtherWork}>
+              <Plus className="mr-1 size-3.5" /> Add
+            </Button>
+          </div>
+          {otherWorks.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No other works yet. Add publications, speaking engagements, patents, awards, volunteering, or languages.
+            </p>
+          )}
+          {otherWorks.map((ow, i) => (
+            <div key={i} className="rounded-lg border p-4">
+              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={ow.title ?? ""}
+                    onChange={(e) =>
+                      updateOtherWork(i, { ...ow, title: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Type</Label>
+                  <Select
+                    value={ow.type ?? "other"}
+                    onValueChange={(value) =>
+                      updateOtherWork(i, { ...ow, type: value ?? "other" })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OTHER_WORK_TYPES.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">URL</Label>
+                  <Input
+                    value={ow.url ?? ""}
+                    placeholder="https://..."
+                    onChange={(e) =>
+                      updateOtherWork(i, {
+                        ...ow,
+                        url: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Date</Label>
+                  <Input
+                    value={ow.date ?? ""}
+                    placeholder="e.g. 2024 or Mar 2024"
+                    onChange={(e) =>
+                      updateOtherWork(i, {
+                        ...ow,
+                        date: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    className="min-h-[50px] resize-y"
+                    value={ow.description ?? ""}
+                    onChange={(e) =>
+                      updateOtherWork(i, {
+                        ...ow,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeOtherWork(i)}
+                className="mt-2 text-destructive"
+              >
+                <Trash2 className="mr-1 size-3.5" /> Remove
+              </Button>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -378,6 +949,38 @@ export function ResumeEditor({
           Re-extract
         </Button>
       </div>
+    </div>
+  );
+}
+
+function AddTagInput({
+  placeholder,
+  onAdd,
+}: {
+  placeholder: string;
+  onAdd: (value: string) => void;
+}) {
+  const [val, setVal] = useState("");
+
+  const handleAdd = () => {
+    const trimmed = val.trim();
+    if (trimmed) {
+      onAdd(trimmed);
+      setVal("");
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Input
+        placeholder={placeholder}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+      />
+      <Button variant="outline" size="sm" onClick={handleAdd}>
+        <Plus className="size-4" />
+      </Button>
     </div>
   );
 }

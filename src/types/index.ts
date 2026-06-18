@@ -18,6 +18,32 @@ export interface Education {
   year: string;
 }
 
+export interface Project {
+  name: string;
+  description: string;
+  url?: string;
+  technologies?: string[];
+  duration?: string;
+  highlights?: string[];
+}
+
+export interface OpenSource {
+  name: string;
+  description: string;
+  url?: string;
+  role?: string;
+  technologies?: string[];
+  highlights?: string[];
+}
+
+export interface OtherWork {
+  title: string;
+  type: string;
+  description: string;
+  url?: string;
+  date?: string;
+}
+
 export interface MasterResume {
   name: string;
   email: string;
@@ -29,7 +55,9 @@ export interface MasterResume {
   experience: Experience[];
   education: Education[];
   certifications?: string[];
-  projects?: string[];
+  projects?: Project[];
+  openSource?: OpenSource[];
+  otherWorks?: OtherWork[];
   customSections?: Record<string, string[]>;
 }
 
