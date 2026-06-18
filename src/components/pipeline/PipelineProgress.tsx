@@ -7,8 +7,11 @@ import type { PipelineStep } from "@/types";
 const STEPS: { key: PipelineStep; label: string }[] = [
   { key: "jd-analysis", label: "JD Analysis" },
   { key: "experience-mapping", label: "Experience Mapping" },
-  { key: "resume-generation", label: "Resume Generation" },
-  { key: "resume-critique", label: "Critique Loop" },
+  { key: "resume-generation", label: "Resume Text" },
+  { key: "resume-critique", label: "Critique" },
+  { key: "resume-spec", label: "Structurize" },
+  { key: "latex-generation", label: "LaTeX Gen" },
+  { key: "latex-verification", label: "Verify" },
 ];
 
 interface PipelineProgressProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Copy, Check, Download, ChevronDown, Trophy, AlertTriangle } from "lucide-react";
+import { Copy, Check, Download, ChevronDown, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,15 +11,30 @@ import {
   downloadDocx,
   downloadPdf,
 } from "@/lib/export";
+import LaTeXEditor from "./LaTeXEditor";
 
 interface ResumeDisplayProps {
   resume: string;
   iteration: number;
   bestScore?: number;
   totalIterations?: number;
+  // LaTeX mode props
+  showLatex?: boolean;
+  latexSource?: string | null;
+  latexHtmlBlob?: Blob | null;
+  resumeSpec?: import("@/types").ResumeSpec | null;
 }
 
-export function ResumeDisplay({ resume, iteration, bestScore, totalIterations }: ResumeDisplayProps) {
+export function ResumeDisplay({
+  resume,
+  iteration,
+  bestScore,
+  totalIterations,
+  showLatex,
+  latexSource,
+  latexHtmlBlob,
+  resumeSpec,
+}: ResumeDisplayProps) {
   const [copied, setCopied] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
@@ -63,6 +78,21 @@ export function ResumeDisplay({ resume, iteration, bestScore, totalIterations }:
     },
     [resume]
   );
+
+  // LaTeX Mode: show editor instead of plain text
+  if (showLatex && latexSource) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="h-[650px]">
+          <LaTeXEditor
+            initialSource={latexSource}
+            initialHtmlBlob={latexHtmlBlob}
+            resumeSpec={resumeSpec}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
