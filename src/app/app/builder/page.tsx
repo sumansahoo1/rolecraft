@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Play,
-  Square,
-  FileText,
-  AlertTriangle,
-  Copy,
-  Download,
-} from "lucide-react";
+import { Play, Square, FileText, AlertTriangle, Copy } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +17,7 @@ import { ResumeDisplay } from "@/components/pipeline/ResumeDisplay";
 import { CritiquePanel } from "@/components/pipeline/CritiquePanel";
 import { usePipeline } from "@/hooks/usePipeline";
 import { getMasterResume, getApiKey } from "@/lib/storage";
+import { copyToClipboard } from "@/lib/export";
 
 const EXAMPLE_JD = `Senior Frontend Engineer
 
@@ -73,6 +67,7 @@ export default function BuilderPage() {
   const isConverged =
     pipeline.critique?.score != null &&
     pipeline.critique.score >= 85 &&
+    pipeline.critique.atsScore >= 90 &&
     pipeline.critique.isConverged;
 
   const handleTabChange = (value: string) => {
@@ -193,46 +188,30 @@ export default function BuilderPage() {
                 <p className="text-xs text-muted-foreground">
                   {isConverged
                     ? `Score: ${pipeline.critique?.score}/100 — ATS Score: ${pipeline.critique?.atsScore}/100`
-                    : "Max iterations reached. Review and download below."}
+                    : `Max iterations reached. Best score: ${pipeline.bestScore}/100.`}
+                  {pipeline.convergenceResult?.reason &&
+                    pipeline.convergenceResult.reason !== "llm_judgment" &&
+                    ` • Stopped: ${pipeline.convergenceResult.reason.replace(/_/g, " ")}`}
                 </p>
+                {pipeline.bestScore > (pipeline.critique?.score ?? 0) && (
+                  <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Best resume (score {pipeline.bestScore}) shown. Last iteration scored{" "}
+                    {pipeline.critique?.score}.
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    if (pipeline.currentResume) {
-                      await navigator.clipboard.writeText(
-                        pipeline.currentResume
-                      );
-                      toast.success("Resume copied to clipboard");
-                    }
-                  }}
-                >
-                  <Copy className="mr-1.5 size-3.5" />
-                  Copy
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (pipeline.currentResume) {
-                      const blob = new Blob([pipeline.currentResume], {
-                        type: "text/plain",
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "rolecraft-resume.txt";
-                      a.click();
-                      URL.revokeObjectURL(url);
-                      toast.success("Resume downloaded");
-                    }
-                  }}
-                >
-                  <Download className="mr-1.5 size-3.5" />
-                  Download .txt
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  if (pipeline.currentResume) {
+                    await copyToClipboard(pipeline.currentResume);
+                  }
+                }}
+              >
+                <Copy className="mr-1.5 size-3.5" />
+                Copy
+              </Button>
             </div>
           </div>
         )}
@@ -305,6 +284,8 @@ export default function BuilderPage() {
                   <ResumeDisplay
                     resume={pipeline.currentResume}
                     iteration={pipeline.iteration}
+                    bestScore={pipeline.bestScore}
+                    totalIterations={pipeline.history.length}
                   />
                 ) : pipeline.running &&
                   (pipeline.currentStep === "resume-generation" ||
@@ -323,6 +304,9 @@ export default function BuilderPage() {
                     data={pipeline.critique}
                     iteration={pipeline.iteration}
                     converged={!!isConverged}
+                    history={pipeline.history}
+                    bestScore={pipeline.bestScore}
+                    convergenceResult={pipeline.convergenceResult}
                   />
                 ) : pipeline.running &&
                   pipeline.currentStep === "resume-critique" ? (

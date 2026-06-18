@@ -3,7 +3,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Star,
+  FolderKanban,
+  MinusCircle,
+} from "lucide-react";
 import type { ExperienceMapping } from "@/types";
 
 interface ExperienceMappingPanelProps {
@@ -83,6 +90,63 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
               </p>
               <p className="text-sm">{data.experienceGap}</p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommended Experience */}
+      {data.recommendedExperience.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-2 pt-4">
+            <div className="flex items-center gap-1.5">
+              <Star className="size-3.5 text-amber-600" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Featured Experience
+              </p>
+            </div>
+            <ul className="list-inside list-disc space-y-0.5 text-sm">
+              {data.recommendedExperience.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommended Projects */}
+      {data.recommendedProjects.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-2 pt-4">
+            <div className="flex items-center gap-1.5">
+              <FolderKanban className="size-3.5 text-blue-600" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Featured Projects
+              </p>
+            </div>
+            <ul className="list-inside list-disc space-y-0.5 text-sm">
+              {data.recommendedProjects.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sections to Downplay */}
+      {data.sectionsToDownplay.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-2 pt-4">
+            <div className="flex items-center gap-1.5">
+              <MinusCircle className="size-3.5 text-muted-foreground" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Downplayed / Removed
+              </p>
+            </div>
+            <ul className="list-inside list-disc space-y-0.5 text-sm text-muted-foreground">
+              {data.sectionsToDownplay.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       )}

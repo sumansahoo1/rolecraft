@@ -2,6 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Target, Eye, ScanSearch } from "lucide-react";
 import type { JDAnalysis } from "@/types";
 
 interface JDAnalysisPanelProps {
@@ -35,7 +37,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
       </Card>
 
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-4">
+        <CardContent className="flex flex-col gap-4 pt-4">
           <div>
             <p className="mb-2 text-xs font-medium text-muted-foreground">
               Required Skills
@@ -48,20 +50,83 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
               ))}
             </div>
           </div>
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Nice to Have
-            </p>
+          {data.niceToHaveSkills.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Nice to Have
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {data.niceToHaveSkills.map((s) => (
+                  <Badge key={s} variant="secondary">
+                    {s}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Core Responsibilities */}
+      {data.coreResponsibilities.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 pt-4">
+            <div className="flex items-center gap-1.5">
+              <Target className="size-3.5 text-blue-600" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Core Responsibilities
+              </p>
+            </div>
+            <ul className="list-inside list-disc space-y-1 text-sm">
+              {data.coreResponsibilities.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Hidden Requirements */}
+      {data.hiddenRequirements.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 pt-4">
+            <div className="flex items-center gap-1.5">
+              <Eye className="size-3.5 text-purple-600" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Hidden Requirements
+              </p>
+            </div>
+            <ul className="list-inside list-disc space-y-1 text-sm">
+              {data.hiddenRequirements.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ATS Keywords */}
+      {data.atsKeywords.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 pt-4">
+            <div className="flex items-center gap-1.5">
+              <ScanSearch className="size-3.5 text-green-600" />
+              <p className="text-xs font-medium text-muted-foreground">
+                ATS Keywords
+              </p>
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              {data.niceToHaveSkills.map((s) => (
-                <Badge key={s} variant="secondary">
-                  {s}
+              {data.atsKeywords.map((k) => (
+                <Badge key={k} variant="outline" className="border-green-600/30">
+                  {k}
                 </Badge>
               ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      <Separator />
 
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
