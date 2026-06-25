@@ -51,9 +51,9 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
               Matched Skills
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {data.matchedSkills.map((s) => (
+              {data.matchedSkills.map((s, i) => (
                 <Badge
-                  key={s}
+                  key={`${s}-${i}`}
                   className="border-green-600/30 bg-green-600/10 text-green-700 dark:text-green-400"
                 >
                   {s}
@@ -67,9 +67,9 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
               Missing Skills
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {data.missingSkills.map((s) => (
+              {data.missingSkills.map((s, i) => (
                 <Badge
-                  key={s}
+                  key={`${s}-${i}`}
                   className="border-red-600/30 bg-red-600/10 text-red-700 dark:text-red-400"
                 >
                   {s}

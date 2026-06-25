@@ -376,8 +376,8 @@ export function ResumeEditor({
         <CardContent className="flex flex-col gap-3 pt-4">
           <Label>Skills</Label>
           <div className="flex flex-wrap gap-2">
-            {resume.skills.map((skill) => (
-              <Badge key={skill} variant="secondary" className="gap-1 pr-1">
+            {resume.skills.map((skill, i) => (
+              <Badge key={`${skill}-${i}`} variant="secondary" className="gap-1 pr-1">
                 {skill}
                 <button
                   onClick={() => removeSkill(skill)}
@@ -633,9 +633,9 @@ export function ResumeEditor({
               <div className="flex flex-col gap-2">
                 <Label className="text-xs">Technologies</Label>
                 <div className="flex flex-wrap gap-1.5">
-                  {(proj.technologies ?? []).map((tech) => (
+                  {(proj.technologies ?? []).map((tech, i) => (
                     <Badge
-                      key={tech}
+                      key={`${tech}-${i}`}
                       variant="secondary"
                       className="gap-1 pr-1"
                     >
@@ -771,9 +771,9 @@ export function ResumeEditor({
               <div className="flex flex-col gap-2">
                 <Label className="text-xs">Technologies</Label>
                 <div className="flex flex-wrap gap-1.5">
-                  {(os.technologies ?? []).map((tech) => (
+                  {(os.technologies ?? []).map((tech, i) => (
                     <Badge
-                      key={tech}
+                      key={`${tech}-${i}`}
                       variant="secondary"
                       className="gap-1 pr-1"
                     >

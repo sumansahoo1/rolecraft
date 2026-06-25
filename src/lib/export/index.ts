@@ -10,6 +10,7 @@ import {
   convertInchesToTwip,
 } from "docx";
 import { jsPDF } from "jspdf";
+import type { ResumeSpec } from "@/types";
 
 export interface ResumeSection {
   heading: string;
@@ -244,6 +245,329 @@ export async function generatePdfBlob(resume: string): Promise<Blob> {
   return doc.output("blob");
 }
 
+/**
+ * Generate a compact, single-page PDF from ResumeSpec using jsPDF.
+ * Automatically adjusts font sizes to fit content on 1 page.
+ * Returns the generated blob and the final y position for verification.
+ */
+export async function generateSpecPdfBlob(
+  spec: ResumeSpec
+): Promise<{ blob: Blob; finalY: number; pageHeight: number; marginBottom: number }> {
+  // ─── Calculate content density (character-aware) ───
+  const totalBulletChars =
+    spec.experience.reduce((sum, e) => sum + e.bullets.join("").length, 0) +
+    spec.projects.reduce((sum, p) => sum + p.bullets.join("").length, 0);
+
+  // Estimate wrapped lines: chars per line ≈ 90 at 8.5pt on letter
+  const estBulletLines = Math.ceil(totalBulletChars / 90);
+  const summaryChars = spec.summary.text?.length ?? 0;
+  const summaryLines = Math.ceil(summaryChars / 95);
+
+  // Contact line length
+  const contactChars =
+    (spec.meta.email?.length ?? 0) +
+    (spec.meta.phone?.length ?? 0) +
+    (spec.meta.location?.length ?? 0) +
+    (spec.meta.linkedin?.length ?? 0) +
+    (spec.meta.github?.length ?? 0) +
+    (spec.meta.portfolio?.length ?? 0);
+  const contactLines = contactChars > 80 ? 2 : 1;
+
+  const expCount = spec.experience.length;
+  const projCount = spec.projects.length;
+  const skillCats = spec.skills.categories.length;
+  const eduCount = spec.education.length;
+
+  // Density: total estimated lines of content
+  const estTotalLines =
+    estBulletLines +
+    summaryLines * 1.1 +
+    contactLines * 0.7 +
+    expCount * 2.5 +      // role header = ~2.5 lines of space
+    projCount * 1.8 +      // project header = ~1.8 lines
+    skillCats * 1.3 +
+    eduCount * 1.2 +
+    5; // section headings overhead
+
+  // Usable height: ~756pt (792 - 36 margin)
+  // Each line at default spacing takes ~11pt
+  // So max lines ≈ 756 / 11 ≈ 68 lines
+  const maxLines = 65;
+
+  // Select font preset based on how much we exceed or fit
+  let bodySize: number;
+  let lineSpacing: number;
+  let headSize: number;
+  let sectionSize: number;
+  let nameSize: number;
+
+  const ratio = estTotalLines / maxLines;
+
+  if (ratio < 0.5) {
+    // Very light
+    bodySize = 9.5; lineSpacing = 13; headSize = 10; sectionSize = 11; nameSize = 18;
+  } else if (ratio < 0.7) {
+    // Light
+    bodySize = 9; lineSpacing = 12; headSize = 9.5; sectionSize = 10.5; nameSize = 17;
+  } else if (ratio < 0.9) {
+    // Medium
+    bodySize = 8.5; lineSpacing = 11; headSize = 9; sectionSize = 10; nameSize = 16;
+  } else if (ratio < 1.1) {
+    // Snug
+    bodySize = 8; lineSpacing = 10; headSize = 8.5; sectionSize = 9.5; nameSize = 15;
+  } else if (ratio < 1.4) {
+    // Tight
+    bodySize = 7.5; lineSpacing = 9; headSize = 8; sectionSize = 9; nameSize = 14;
+  } else {
+    // Very tight
+    bodySize = 7; lineSpacing = 8.5; headSize = 7.5; sectionSize = 8.5; nameSize = 13;
+  }
+
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.width; // 612pt
+  const pageH = doc.internal.pageSize.height; // 792pt
+  const marginX = 42;
+  const marginTop = 38;
+  const mBottom = 34;
+  const maxWidth = pageWidth - marginX * 2;
+  let y = marginTop;
+  const maxY = pageH - mBottom;
+
+  // Global overflow guard — once tripped, stop rendering body content
+  let overflowed = false;
+
+  const willFit = (needed: number): boolean => {
+    if (overflowed) return false;
+    if (y + needed > maxY) {
+      overflowed = true;
+      return false;
+    }
+    return true;
+  };
+
+  // ─── Section heading ───
+  const sectionHeading = (text: string) => {
+    if (overflowed || !willFit(sectionSize + 14)) return;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(sectionSize);
+    doc.setTextColor(30, 41, 59);
+    doc.text(text.toUpperCase(), marginX, y);
+    y += sectionSize + 4;
+    doc.setDrawColor(148, 163, 184);
+    doc.setLineWidth(0.4);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 7;
+  };
+
+  // ─── Body paragraph ───
+  const bodyText = (text: string, indent: number = 0) => {
+    if (overflowed) return;
+    const x = marginX + indent;
+    const lines = doc.splitTextToSize(text, maxWidth - indent);
+    for (const line of lines) {
+      if (!willFit(lineSpacing)) return;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(bodySize);
+      doc.setTextColor(51, 65, 85);
+      doc.text(line as string, x, y);
+      y += lineSpacing;
+    }
+  };
+
+  // ─── Bullet point ───
+  const bulletText = (text: string) => {
+    if (overflowed) return;
+    const bulletX = marginX + 3;
+    const textX = marginX + 13;
+    const lines = doc.splitTextToSize(text, maxWidth - 13);
+    for (let i = 0; i < lines.length; i++) {
+      if (!willFit(lineSpacing)) return;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(bodySize);
+      doc.setTextColor(51, 65, 85);
+      if (i === 0) {
+        doc.setFontSize(bodySize - 1);
+        doc.setTextColor(100, 116, 139);
+        doc.text("•", bulletX, y);
+        doc.setFontSize(bodySize);
+        doc.setTextColor(51, 65, 85);
+      }
+      doc.text(lines[i] as string, textX, y);
+      y += lineSpacing;
+    }
+  };
+
+  // ─── Header ───
+  const { meta } = spec;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(nameSize);
+  doc.setTextColor(30, 41, 59);
+  doc.text(meta.name || "", pageWidth / 2, y, { align: "center" });
+  y += nameSize + 4;
+
+  // Contact line
+  const contactParts: string[] = [];
+  if (meta.email) contactParts.push(meta.email);
+  if (meta.phone) contactParts.push(meta.phone);
+  if (meta.location) contactParts.push(meta.location);
+  if (meta.linkedin) {
+    const h = meta.linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "");
+    contactParts.push(`linkedin.com/in/${h}`);
+  }
+  if (meta.github) {
+    const h = meta.github.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\/$/, "");
+    contactParts.push(`github.com/${h}`);
+  }
+  if (meta.portfolio) {
+    contactParts.push(meta.portfolio.replace(/^https?:\/\//, "").replace(/\/$/, ""));
+  }
+
+  if (contactParts.length > 0) {
+    const contactText = contactParts.join("  |  ");
+    const contactLines = doc.splitTextToSize(contactText, maxWidth);
+    for (const cl of contactLines) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(cl as string, pageWidth / 2, y, { align: "center" });
+      y += 10;
+    }
+  } else {
+    y += 4;
+  }
+
+  if (meta.targetRole) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text(meta.targetRole, pageWidth / 2, y, { align: "center" });
+    y += 10;
+  }
+
+  y += 4;
+
+  // ─── Summary ───
+  if (spec.summary.text && !overflowed) {
+    sectionHeading("Summary");
+    bodyText(spec.summary.text);
+    y += 2;
+  }
+
+  // ─── Experience ───
+  if (spec.experience.length > 0 && !overflowed) {
+    sectionHeading("Experience");
+    for (const exp of spec.experience) {
+      if (overflowed) break;
+      const roleCompany = exp.company
+        ? `${exp.role}  |  ${exp.company}`
+        : exp.role;
+      if (!willFit(headSize + 4)) break;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(headSize);
+      doc.setTextColor(30, 41, 59);
+      doc.text(roleCompany, marginX, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(exp.dates, pageWidth - marginX, y, { align: "right" });
+      y += headSize + 3;
+
+      for (const bullet of exp.bullets) {
+        if (overflowed) break;
+        bulletText(bullet);
+      }
+      y += 2;
+    }
+  }
+
+  // ─── Projects ───
+  if (spec.projects.length > 0 && !overflowed) {
+    sectionHeading("Projects");
+    for (const proj of spec.projects) {
+      if (overflowed) break;
+      if (!willFit(headSize + 3)) break;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(headSize);
+      doc.setTextColor(30, 41, 59);
+      doc.text(proj.name, marginX, y);
+      y += headSize + 2;
+
+      for (const bullet of proj.bullets) {
+        if (overflowed) break;
+        bulletText(bullet);
+      }
+      y += 2;
+    }
+  }
+
+  // ─── Skills ───
+  if (spec.skills.categories.length > 0 && !overflowed) {
+    sectionHeading("Skills");
+    for (const cat of spec.skills.categories) {
+      if (overflowed) break;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(bodySize);
+      doc.setTextColor(30, 41, 59);
+      const catLabel = `${cat.name}: `;
+      const labelW = doc.getTextWidth(catLabel);
+      doc.text(catLabel, marginX, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(51, 65, 85);
+      const itemsText = cat.items.join(", ");
+      const itemsLines = doc.splitTextToSize(itemsText, maxWidth - labelW);
+      doc.text(itemsLines[0] as string, marginX + labelW, y);
+      for (let i = 1; i < itemsLines.length; i++) {
+        if (!willFit(lineSpacing)) break;
+        y += lineSpacing;
+        doc.text(itemsLines[i] as string, marginX + 4, y);
+      }
+      y += lineSpacing;
+    }
+  }
+
+  // ─── Education ───
+  if (spec.education.length > 0 && !overflowed) {
+    sectionHeading("Education");
+    for (const edu of spec.education) {
+      if (overflowed) break;
+      if (!willFit(lineSpacing)) break;
+      const degreeField = [edu.degree, edu.field].filter(Boolean).join(" in ");
+      const left = [degreeField, edu.institution].filter(Boolean).join(", ");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(bodySize);
+      doc.setTextColor(51, 65, 85);
+      doc.text(left, marginX, y);
+
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(edu.year, pageWidth - marginX, y, { align: "right" });
+      y += lineSpacing;
+    }
+  }
+
+  // ─── Optional Sections ───
+  if (spec.optionalSections && spec.optionalSections.length > 0 && !overflowed) {
+    for (const opt of spec.optionalSections) {
+      if (overflowed || !willFit(sectionSize + 20)) break;
+      sectionHeading(opt.heading);
+      for (const item of opt.items) {
+        if (overflowed || !willFit(lineSpacing)) break;
+        bulletText(item);
+      }
+    }
+  }
+
+  return {
+    blob: doc.output("blob"),
+    finalY: y,
+    pageHeight: pageH,
+    marginBottom: mBottom,
+  };
+}
+
 function triggerDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -253,12 +577,13 @@ function triggerDownload(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function downloadLatexPdf(
-  blob: Blob,
+export async function downloadLatexPdf(
+  spec: ResumeSpec,
   filename: string = "rolecraft-resume.pdf"
-): void {
+): Promise<void> {
+  const { blob } = await generateSpecPdfBlob(spec);
   triggerDownload(blob, filename);
-  toast.success("Downloaded as PDF (LaTeX)");
+  toast.success("Downloaded as PDF");
 }
 
 export function downloadTex(

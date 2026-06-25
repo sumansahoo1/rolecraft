@@ -26,23 +26,23 @@ export function renderResumeHtml(spec: ResumeSpec): string {
 
   body {
     font-family: 'Libre Baskerville', 'Times New Roman', serif;
-    font-size: 10pt;
-    line-height: 1.22;
+    font-size: 8.5pt;
+    line-height: 1.18;
     color: #1e293b;
     background: white;
     max-width: 8.5in;
     margin: 0 auto;
-    padding: 0.55in 0.6in 0.5in 0.6in;
+    padding: 0.47in 0.5in 0.42in 0.5in;
   }
 
   /* ─── Print / PDF ─── */
   @page {
     size: letter;
-    margin: 0.55in 0.6in 0.5in 0.6in;
+    margin: 0;
   }
   @media print {
     body {
-      padding: 0;
+      padding: 0.47in 0.5in 0.42in 0.5in;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -54,14 +54,14 @@ export function renderResumeHtml(spec: ResumeSpec): string {
     margin-bottom: 10pt;
   }
   .header .name {
-    font-size: 18pt;
+    font-size: 16pt;
     font-weight: 700;
     color: #1e293b;
     letter-spacing: 0.3pt;
-    margin-bottom: 2pt;
+    margin-bottom: 1pt;
   }
   .header .contact {
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     color: #475569;
     font-family: 'Inter', sans-serif;
   }
@@ -70,11 +70,11 @@ export function renderResumeHtml(spec: ResumeSpec): string {
     text-decoration: none;
   }
   .header .contact span.sep {
-    margin: 0 4pt;
+    margin: 0 3pt;
     color: #94a3b8;
   }
   .header .role {
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     color: #64748b;
     font-style: italic;
     margin-top: 1pt;
@@ -83,47 +83,47 @@ export function renderResumeHtml(spec: ResumeSpec): string {
 
   /* ─── Sections ─── */
   .section {
-    margin-bottom: 6pt;
+    margin-bottom: 4pt;
   }
   .section-heading {
-    font-size: 11pt;
+    font-size: 9pt;
     font-weight: 700;
     color: #1e293b;
-    letter-spacing: 0.5pt;
+    letter-spacing: 0.4pt;
     text-transform: uppercase;
     border-bottom: 0.4pt solid #94a3b8;
-    padding-bottom: 2pt;
-    margin-bottom: 4pt;
+    padding-bottom: 1pt;
+    margin-bottom: 3pt;
   }
 
   /* ─── Summary ─── */
   .summary-text {
     color: #334155;
-    line-height: 1.25;
+    line-height: 1.2;
   }
 
   /* ─── Experience ─── */
   .exp-entry {
-    margin-bottom: 5pt;
+    margin-bottom: 3pt;
   }
   .exp-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 1pt;
+    margin-bottom: 0.5pt;
   }
   .exp-role {
     font-weight: 700;
     color: #1e293b;
-    font-size: 10pt;
+    font-size: 8.5pt;
   }
   .exp-company {
     font-weight: 400;
     color: #475569;
-    font-size: 9.5pt;
+    font-size: 8pt;
   }
   .exp-dates {
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     color: #64748b;
     font-family: 'Inter', sans-serif;
     white-space: nowrap;
@@ -134,29 +134,29 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   }
   .exp-bullets li {
     position: relative;
-    padding-left: 10pt;
-    margin-bottom: 0.5pt;
+    padding-left: 9pt;
+    margin-bottom: 0pt;
     color: #334155;
-    font-size: 9.5pt;
-    line-height: 1.2;
+    font-size: 8.5pt;
+    line-height: 1.18;
   }
   .exp-bullets li::before {
     content: "•";
     position: absolute;
     left: 1pt;
     color: #64748b;
-    font-size: 8pt;
+    font-size: 7pt;
   }
 
   /* ─── Projects ─── */
   .proj-entry {
-    margin-bottom: 4pt;
+    margin-bottom: 3pt;
   }
   .proj-name {
     font-weight: 700;
     color: #1e293b;
-    font-size: 10pt;
-    margin-bottom: 1pt;
+    font-size: 8.5pt;
+    margin-bottom: 0.5pt;
   }
   .proj-bullets {
     list-style: none;
@@ -164,24 +164,24 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   }
   .proj-bullets li {
     position: relative;
-    padding-left: 10pt;
-    margin-bottom: 0.5pt;
+    padding-left: 9pt;
+    margin-bottom: 0pt;
     color: #334155;
-    font-size: 9.5pt;
-    line-height: 1.2;
+    font-size: 8.5pt;
+    line-height: 1.18;
   }
   .proj-bullets li::before {
     content: "•";
     position: absolute;
     left: 1pt;
     color: #64748b;
-    font-size: 8pt;
+    font-size: 7pt;
   }
 
   /* ─── Skills ─── */
   .skills-line {
-    margin-bottom: 1pt;
-    font-size: 9.5pt;
+    margin-bottom: 0.5pt;
+    font-size: 8.5pt;
   }
   .skills-cat {
     font-weight: 700;
@@ -195,8 +195,8 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   .edu-entry {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 1pt;
-    font-size: 9.5pt;
+    margin-bottom: 0.5pt;
+    font-size: 8.5pt;
     color: #334155;
   }
   .edu-details {
@@ -205,7 +205,7 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   .edu-year {
     color: #64748b;
     font-family: 'Inter', sans-serif;
-    font-size: 8.5pt;
+    font-size: 7.5pt;
   }
 
   /* ─── Optional Sections ─── */
@@ -215,18 +215,18 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   }
   .opt-bullets li {
     position: relative;
-    padding-left: 10pt;
-    margin-bottom: 0.5pt;
+    padding-left: 9pt;
+    margin-bottom: 0pt;
     color: #334155;
-    font-size: 9.5pt;
-    line-height: 1.2;
+    font-size: 8.5pt;
+    line-height: 1.18;
   }
   .opt-bullets li::before {
     content: "•";
     position: absolute;
     left: 1pt;
     color: #64748b;
-    font-size: 8pt;
+    font-size: 7pt;
   }
 </style>
 </head>
@@ -246,12 +246,23 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   if (meta.phone) {
     contactItems.push(escapeHtml(meta.phone));
   }
+  if (meta.location) {
+    contactItems.push(escapeHtml(meta.location));
+  }
   if (meta.linkedin) {
     const handle = meta.linkedin
       .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "")
       .replace(/\/$/, "");
     contactItems.push(
       `<a href="https://linkedin.com/in/${escapeHtml(handle)}" target="_blank">linkedin.com/in/${escapeHtml(handle)}</a>`
+    );
+  }
+  if (meta.github) {
+    const handle = meta.github
+      .replace(/^https?:\/\/(www\.)?github\.com\//, "")
+      .replace(/\/$/, "");
+    contactItems.push(
+      `<a href="https://github.com/${escapeHtml(handle)}" target="_blank">github.com/${escapeHtml(handle)}</a>`
     );
   }
   if (meta.portfolio) {

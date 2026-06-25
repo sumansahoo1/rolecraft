@@ -2,3 +2,8 @@ export { getLatexEngine, LatexEngine } from "./engine";
 export type { CompileResult, EngineStatus } from "./engine";
 export { generateLatexSource, escapeLatex, escapeLatexUrl } from "./template";
 export { verifyLatexOutput } from "./verify";
+export { renderResumeHtml, renderResumeText } from "./render";
+export { measureHtmlPageFit } from "./measure";
+export type { PageFitResult } from "./measure";
+export { shrinkSpecToFit } from "./shrink";
+export type { ShrinkResult } from "./shrink";
