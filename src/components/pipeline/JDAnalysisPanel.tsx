@@ -43,8 +43,8 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
               Required Skills
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {data.requiredSkills.map((s) => (
-                <Badge key={s} variant="default">
+              {data.requiredSkills.map((s, i) => (
+                <Badge key={`${s}-${i}`} variant="default">
                   {s}
                 </Badge>
               ))}
@@ -56,8 +56,8 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
                 Nice to Have
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {data.niceToHaveSkills.map((s) => (
-                  <Badge key={s} variant="secondary">
+                {data.niceToHaveSkills.map((s, i) => (
+                  <Badge key={`${s}-${i}`} variant="secondary">
                     {s}
                   </Badge>
                 ))}
@@ -116,8 +116,8 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {data.atsKeywords.map((k) => (
-                <Badge key={k} variant="outline" className="border-green-600/30">
+              {data.atsKeywords.map((k, i) => (
+                <Badge key={`${k}-${i}`} variant="outline" className="border-green-600/30">
                   {k}
                 </Badge>
               ))}
@@ -145,8 +145,8 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
               Keywords
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {data.keywords.map((k) => (
-                <Badge key={k} variant="outline">
+              {data.keywords.map((k, i) => (
+                <Badge key={`${k}-${i}`} variant="outline">
                   {k}
                 </Badge>
               ))}

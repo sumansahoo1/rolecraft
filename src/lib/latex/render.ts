@@ -38,11 +38,11 @@ export function renderResumeHtml(spec: ResumeSpec): string {
   /* ─── Print / PDF ─── */
   @page {
     size: letter;
-    margin: 0.47in 0.5in 0.42in 0.5in;
+    margin: 0;
   }
   @media print {
     body {
-      padding: 0;
+      padding: 0.47in 0.5in 0.42in 0.5in;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
