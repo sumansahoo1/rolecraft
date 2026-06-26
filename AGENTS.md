@@ -1,7 +1,9 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version (16.x) has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 ## Commands
@@ -31,9 +33,9 @@ No `test` or `typecheck` scripts — only lint is wired up.
 
 ## Routes
 
-| Path | Description |
-|------|-------------|
-| `/` | Landing page (`src/app/page.tsx`) |
+| Path   | Description                                         |
+| ------ | --------------------------------------------------- |
+| `/`    | Landing page (`src/app/page.tsx`)                   |
 | `/app` | Builder page — placeholder (`src/app/app/page.tsx`) |
 
 ## Project structure (high-level)

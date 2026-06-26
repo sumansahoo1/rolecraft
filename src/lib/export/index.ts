@@ -1,18 +1,11 @@
-"use client";
+'use client';
 
-import { toast } from "sonner";
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  BorderStyle,
-  convertInchesToTwip,
-} from "docx";
-import { jsPDF } from "jspdf";
-import type { ResumeSpec } from "@/types";
-import { renderResumeHtml } from "@/lib/latex/render";
-import { measureHtmlPageFit } from "@/lib/latex/measure";
+import { toast } from 'sonner';
+import { Document, Packer, Paragraph, TextRun, BorderStyle, convertInchesToTwip } from 'docx';
+import { jsPDF } from 'jspdf';
+import type { ResumeSpec } from '@/types';
+import { renderResumeHtml } from '@/lib/latex/render';
+import { measureHtmlPageFit } from '@/lib/latex/measure';
 
 export interface ResumeSection {
   heading: string;
@@ -35,11 +28,11 @@ const HEADING_PATTERNS = [
 ];
 
 export function parseResumeSections(text: string): ResumeSection[] {
-  const rawLines = text.split("\n");
-  const lines = rawLines.filter((l) => l.trim() !== "");
+  const rawLines = text.split('\n');
+  const lines = rawLines.filter((l) => l.trim() !== '');
   const sections: ResumeSection[] = [];
 
-  let currentHeading = "";
+  let currentHeading = '';
   let currentContent: string[] = [];
   let firstSection = true;
 
@@ -54,7 +47,7 @@ export function parseResumeSections(text: string): ResumeSection[] {
       if (currentContent.length > 0 || firstSection) {
         if (currentHeading || currentContent.length > 0) {
           sections.push({
-            heading: currentHeading || "Header",
+            heading: currentHeading || 'Header',
             content: currentContent,
           });
         }
@@ -69,13 +62,13 @@ export function parseResumeSections(text: string): ResumeSection[] {
 
   if (currentContent.length > 0) {
     sections.push({
-      heading: currentHeading || "Header",
+      heading: currentHeading || 'Header',
       content: currentContent,
     });
   }
 
   if (sections.length === 0) {
-    sections.push({ heading: "", content: lines });
+    sections.push({ heading: '', content: lines });
   }
 
   return sections;
@@ -91,51 +84,45 @@ export function buildResumeFilename(
   }
 ): string {
   const now = new Date();
-  const dd = String(now.getDate()).padStart(2, "0");
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
   const yyyy = now.getFullYear();
   const date = `${dd}${mm}${yyyy}`;
 
-  const parts = [
-    opts?.name?.trim(),
-    opts?.company?.trim(),
-    opts?.role?.trim(),
-    date,
-  ].filter((p): p is string => Boolean(p));
+  const parts = [opts?.name?.trim(), opts?.company?.trim(), opts?.role?.trim(), date].filter(
+    (p): p is string => Boolean(p)
+  );
 
-  return `${parts.join("_")}_Resume.${ext}`;
+  return `${parts.join('_')}_Resume.${ext}`;
 }
 
 export async function copyToClipboard(text: string): Promise<void> {
   await navigator.clipboard.writeText(text);
-  toast.success("Copied to clipboard");
+  toast.success('Copied to clipboard');
 }
 
-export function downloadTxt(
-  resume: string,
-  filename: string = "rolecraft-resume.txt"
-): void {
-  const blob = new Blob([resume], { type: "text/plain" });
+export function downloadTxt(resume: string, filename: string = 'rolecraft-resume.txt'): void {
+  const blob = new Blob([resume], { type: 'text/plain' });
   triggerDownload(blob, filename);
-  toast.success("Downloaded as .txt");
+  toast.success('Downloaded as .txt');
 }
 
 export async function downloadDocx(
   resume: string,
-  filename: string = "rolecraft-resume.docx"
+  filename: string = 'rolecraft-resume.docx'
 ): Promise<void> {
   const blob = await generateDocxBlob(resume);
   triggerDownload(blob, filename);
-  toast.success("Downloaded as .docx");
+  toast.success('Downloaded as .docx');
 }
 
 export async function downloadPdf(
   resume: string,
-  filename: string = "rolecraft-resume.pdf"
+  filename: string = 'rolecraft-resume.pdf'
 ): Promise<void> {
   const blob = await generatePdfBlob(resume);
   triggerDownload(blob, filename);
-  toast.success("Downloaded as .pdf");
+  toast.success('Downloaded as .pdf');
 }
 
 export async function generateDocxBlob(resume: string): Promise<Blob> {
@@ -146,7 +133,7 @@ export async function generateDocxBlob(resume: string): Promise<Blob> {
       default: {
         document: {
           run: {
-            font: "Calibri",
+            font: 'Calibri',
             size: 22,
           },
         },
@@ -178,7 +165,7 @@ export async function generateDocxBlob(resume: string): Promise<Blob> {
                   bottom: {
                     style: BorderStyle.SINGLE,
                     size: 1,
-                    color: "999999",
+                    color: '999999',
                     space: 4,
                   },
                 },
@@ -187,7 +174,7 @@ export async function generateDocxBlob(resume: string): Promise<Blob> {
                     text: section.heading,
                     bold: true,
                     size: 28,
-                    font: "Calibri",
+                    font: 'Calibri',
                   }),
                 ],
               })
@@ -201,7 +188,7 @@ export async function generateDocxBlob(resume: string): Promise<Blob> {
                 children: [
                   new TextRun({
                     text: line,
-                    font: "Calibri",
+                    font: 'Calibri',
                     size: 22,
                   }),
                 ],
@@ -220,7 +207,7 @@ export async function generateDocxBlob(resume: string): Promise<Blob> {
 
 export async function generatePdfBlob(resume: string): Promise<Blob> {
   const sections = parseResumeSections(resume);
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
@@ -241,7 +228,7 @@ export async function generatePdfBlob(resume: string): Promise<Blob> {
 
     if (section.heading) {
       checkPageBreak(30);
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.setTextColor(51, 65, 85);
       doc.text(section.heading, margin, y);
@@ -253,7 +240,7 @@ export async function generatePdfBlob(resume: string): Promise<Blob> {
       y += 12;
     }
 
-    doc.setFont("courier", "normal");
+    doc.setFont('courier', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(30, 41, 59);
 
@@ -269,7 +256,7 @@ export async function generatePdfBlob(resume: string): Promise<Blob> {
     y += 8;
   }
 
-  return doc.output("blob");
+  return doc.output('blob');
 }
 
 /**
@@ -292,33 +279,54 @@ export async function generateSpecPdfBlob(
   try {
     const html = renderResumeHtml(spec);
     const fit = await measureHtmlPageFit(html);
-    const ratio =
-      fit.pageHeight > 0
-        ? (fit.scrollHeight - fit.pageHeight) / fit.pageHeight
-        : 0;
+    const ratio = fit.pageHeight > 0 ? (fit.scrollHeight - fit.pageHeight) / fit.pageHeight : 0;
 
     if (ratio <= 0) {
       // Fits comfortably — light
-      bodySize = 9; lineSpacing = 12; headSize = 9.5; sectionSize = 10.5; nameSize = 17;
+      bodySize = 9;
+      lineSpacing = 12;
+      headSize = 9.5;
+      sectionSize = 10.5;
+      nameSize = 17;
     } else if (ratio < 0.15) {
       // Barely over — medium
-      bodySize = 8.5; lineSpacing = 11; headSize = 9; sectionSize = 10; nameSize = 16;
+      bodySize = 8.5;
+      lineSpacing = 11;
+      headSize = 9;
+      sectionSize = 10;
+      nameSize = 16;
     } else if (ratio < 0.35) {
       // Moderately over — snug
-      bodySize = 8; lineSpacing = 10; headSize = 8.5; sectionSize = 9.5; nameSize = 15;
+      bodySize = 8;
+      lineSpacing = 10;
+      headSize = 8.5;
+      sectionSize = 9.5;
+      nameSize = 15;
     } else if (ratio < 0.6) {
       // Significantly over — tight
-      bodySize = 7.5; lineSpacing = 9; headSize = 8; sectionSize = 9; nameSize = 14;
+      bodySize = 7.5;
+      lineSpacing = 9;
+      headSize = 8;
+      sectionSize = 9;
+      nameSize = 14;
     } else {
       // Severely over — very tight
-      bodySize = 7; lineSpacing = 8.5; headSize = 7.5; sectionSize = 8.5; nameSize = 13;
+      bodySize = 7;
+      lineSpacing = 8.5;
+      headSize = 7.5;
+      sectionSize = 8.5;
+      nameSize = 13;
     }
   } catch {
     // Fallback: measurement failed (iframe unavailable), use medium preset
-    bodySize = 8.5; lineSpacing = 11; headSize = 9; sectionSize = 10; nameSize = 16;
+    bodySize = 8.5;
+    lineSpacing = 11;
+    headSize = 9;
+    sectionSize = 10;
+    nameSize = 16;
   }
 
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const pageWidth = doc.internal.pageSize.width; // 612pt
   const pageH = doc.internal.pageSize.height; // 792pt
   const marginX = 42;
@@ -343,7 +351,7 @@ export async function generateSpecPdfBlob(
   // ─── Section heading ───
   const sectionHeading = (text: string) => {
     if (overflowed || !willFit(sectionSize + 14)) return;
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(sectionSize);
     doc.setTextColor(30, 41, 59);
     doc.text(text.toUpperCase(), marginX, y);
@@ -361,7 +369,7 @@ export async function generateSpecPdfBlob(
     const lines = doc.splitTextToSize(text, maxWidth - indent);
     for (const line of lines) {
       if (!willFit(lineSpacing)) return;
-      doc.setFont("helvetica", "normal");
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(bodySize);
       doc.setTextColor(51, 65, 85);
       doc.text(line as string, x, y);
@@ -377,13 +385,13 @@ export async function generateSpecPdfBlob(
     const lines = doc.splitTextToSize(text, maxWidth - 13);
     for (let i = 0; i < lines.length; i++) {
       if (!willFit(lineSpacing)) return;
-      doc.setFont("helvetica", "normal");
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(bodySize);
       doc.setTextColor(51, 65, 85);
       if (i === 0) {
         doc.setFontSize(bodySize - 1);
         doc.setTextColor(100, 116, 139);
-        doc.text("•", bulletX, y);
+        doc.text('•', bulletX, y);
         doc.setFontSize(bodySize);
         doc.setTextColor(51, 65, 85);
       }
@@ -395,10 +403,10 @@ export async function generateSpecPdfBlob(
   // ─── Header ───
   const { meta } = spec;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(nameSize);
   doc.setTextColor(30, 41, 59);
-  doc.text(meta.name || "", pageWidth / 2, y, { align: "center" });
+  doc.text(meta.name || '', pageWidth / 2, y, { align: 'center' });
   y += nameSize + 4;
 
   // Contact line
@@ -407,25 +415,27 @@ export async function generateSpecPdfBlob(
   if (meta.phone) contactParts.push(meta.phone);
   if (meta.location) contactParts.push(meta.location);
   if (meta.linkedin) {
-    const h = meta.linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "");
+    const h = meta.linkedin
+      .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '')
+      .replace(/\/$/, '');
     contactParts.push(`linkedin.com/in/${h}`);
   }
   if (meta.github) {
-    const h = meta.github.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\/$/, "");
+    const h = meta.github.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/\/$/, '');
     contactParts.push(`github.com/${h}`);
   }
   if (meta.portfolio) {
-    contactParts.push(meta.portfolio.replace(/^https?:\/\//, "").replace(/\/$/, ""));
+    contactParts.push(meta.portfolio.replace(/^https?:\/\//, '').replace(/\/$/, ''));
   }
 
   if (contactParts.length > 0) {
-    const contactText = contactParts.join("  |  ");
+    const contactText = contactParts.join('  |  ');
     const contactLines = doc.splitTextToSize(contactText, maxWidth);
     for (const cl of contactLines) {
-      doc.setFont("helvetica", "normal");
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(71, 85, 105);
-      doc.text(cl as string, pageWidth / 2, y, { align: "center" });
+      doc.text(cl as string, pageWidth / 2, y, { align: 'center' });
       y += 10;
     }
   } else {
@@ -433,10 +443,10 @@ export async function generateSpecPdfBlob(
   }
 
   if (meta.targetRole) {
-    doc.setFont("helvetica", "italic");
+    doc.setFont('helvetica', 'italic');
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(meta.targetRole, pageWidth / 2, y, { align: "center" });
+    doc.text(meta.targetRole, pageWidth / 2, y, { align: 'center' });
     y += 10;
   }
 
@@ -444,29 +454,27 @@ export async function generateSpecPdfBlob(
 
   // ─── Summary ───
   if (spec.summary.text && !overflowed) {
-    sectionHeading("Summary");
+    sectionHeading('Summary');
     bodyText(spec.summary.text);
     y += 2;
   }
 
   // ─── Experience ───
   if (spec.experience.length > 0 && !overflowed) {
-    sectionHeading("Experience");
+    sectionHeading('Experience');
     for (const exp of spec.experience) {
       if (overflowed) break;
-      const roleCompany = exp.company
-        ? `${exp.role}  |  ${exp.company}`
-        : exp.role;
+      const roleCompany = exp.company ? `${exp.role}  |  ${exp.company}` : exp.role;
       if (!willFit(headSize + 4)) break;
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(headSize);
       doc.setTextColor(30, 41, 59);
       doc.text(roleCompany, marginX, y);
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(100, 116, 139);
-      doc.text(exp.dates, pageWidth - marginX, y, { align: "right" });
+      doc.text(exp.dates, pageWidth - marginX, y, { align: 'right' });
       y += headSize + 3;
 
       for (const bullet of exp.bullets) {
@@ -479,11 +487,11 @@ export async function generateSpecPdfBlob(
 
   // ─── Projects ───
   if (spec.projects.length > 0 && !overflowed) {
-    sectionHeading("Projects");
+    sectionHeading('Projects');
     for (const proj of spec.projects) {
       if (overflowed) break;
       if (!willFit(headSize + 3)) break;
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(headSize);
       doc.setTextColor(30, 41, 59);
       doc.text(proj.name, marginX, y);
@@ -499,19 +507,19 @@ export async function generateSpecPdfBlob(
 
   // ─── Skills ───
   if (spec.skills.categories.length > 0 && !overflowed) {
-    sectionHeading("Skills");
+    sectionHeading('Skills');
     for (const cat of spec.skills.categories) {
       if (overflowed) break;
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(bodySize);
       doc.setTextColor(30, 41, 59);
       const catLabel = `${cat.name}: `;
       const labelW = doc.getTextWidth(catLabel);
       doc.text(catLabel, marginX, y);
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(51, 65, 85);
-      const itemsText = cat.items.join(", ");
+      const itemsText = cat.items.join(', ');
       const itemsLines = doc.splitTextToSize(itemsText, maxWidth - labelW);
       doc.text(itemsLines[0] as string, marginX + labelW, y);
       for (let i = 1; i < itemsLines.length; i++) {
@@ -525,20 +533,20 @@ export async function generateSpecPdfBlob(
 
   // ─── Education ───
   if (spec.education.length > 0 && !overflowed) {
-    sectionHeading("Education");
+    sectionHeading('Education');
     for (const edu of spec.education) {
       if (overflowed) break;
       if (!willFit(lineSpacing)) break;
-      const degreeField = [edu.degree, edu.field].filter(Boolean).join(" in ");
-      const left = [degreeField, edu.institution].filter(Boolean).join(", ");
-      doc.setFont("helvetica", "normal");
+      const degreeField = [edu.degree, edu.field].filter(Boolean).join(' in ');
+      const left = [degreeField, edu.institution].filter(Boolean).join(', ');
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(bodySize);
       doc.setTextColor(51, 65, 85);
       doc.text(left, marginX, y);
 
       doc.setFontSize(7);
       doc.setTextColor(100, 116, 139);
-      doc.text(edu.year, pageWidth - marginX, y, { align: "right" });
+      doc.text(edu.year, pageWidth - marginX, y, { align: 'right' });
       y += lineSpacing;
     }
   }
@@ -556,7 +564,7 @@ export async function generateSpecPdfBlob(
   }
 
   return {
-    blob: doc.output("blob"),
+    blob: doc.output('blob'),
     finalY: y,
     pageHeight: pageH,
     marginBottom: mBottom,
@@ -565,7 +573,7 @@ export async function generateSpecPdfBlob(
 
 function triggerDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.click();
@@ -574,18 +582,15 @@ function triggerDownload(blob: Blob, filename: string): void {
 
 export async function downloadLatexPdf(
   spec: ResumeSpec,
-  filename: string = "rolecraft-resume.pdf"
+  filename: string = 'rolecraft-resume.pdf'
 ): Promise<void> {
   const { blob } = await generateSpecPdfBlob(spec);
   triggerDownload(blob, filename);
-  toast.success("Downloaded as PDF");
+  toast.success('Downloaded as PDF');
 }
 
-export function downloadTex(
-  tex: string,
-  filename: string = "rolecraft-resume.tex"
-): void {
-  const blob = new Blob([tex], { type: "application/x-tex" });
+export function downloadTex(tex: string, filename: string = 'rolecraft-resume.tex'): void {
+  const blob = new Blob([tex], { type: 'application/x-tex' });
   triggerDownload(blob, filename);
-  toast.success("Downloaded as .tex");
+  toast.success('Downloaded as .tex');
 }

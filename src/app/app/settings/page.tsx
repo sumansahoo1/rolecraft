@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { getApiKey, setApiKey, getModel, setModel, getProvider, setProvider } from "@/lib/storage";
-import { createChatCompletion, PROVIDER_CONFIGS, getDefaultModel } from "@/lib/ai";
-import type { Provider } from "@/types";
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { getApiKey, setApiKey, getModel, setModel, getProvider, setProvider } from '@/lib/storage';
+import { createChatCompletion, PROVIDER_CONFIGS, getDefaultModel } from '@/lib/ai';
+import type { Provider } from '@/types';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [provider, setProviderState] = useState<Provider>("deepseek");
-  const [apiKey, setApiKeyState] = useState("");
-  const [model, setModelState] = useState("");
+  const [provider, setProviderState] = useState<Provider>('deepseek');
+  const [apiKey, setApiKeyState] = useState('');
+  const [model, setModelState] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const prevKeyRef = useRef(apiKey);
@@ -34,7 +34,7 @@ export default function SettingsPage() {
     const storedProvider = getProvider();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProviderState(storedProvider);
-    setApiKeyState(getApiKey(storedProvider) ?? "");
+    setApiKeyState(getApiKey(storedProvider) ?? '');
     setModelState(getModel());
   }, []);
 
@@ -48,7 +48,7 @@ export default function SettingsPage() {
     setModelState(defaultModel);
     setModel(defaultModel);
     // Load this provider's stored API key
-    setApiKeyState(getApiKey(p) ?? "");
+    setApiKeyState(getApiKey(p) ?? '');
   };
 
   const handleApiKeyChange = (value: string) => {
@@ -58,7 +58,7 @@ export default function SettingsPage() {
 
   const handleKeyBlur = () => {
     if (apiKey.trim() && !prevKeyRef.current.trim()) {
-      router.push("/app");
+      router.push('/app');
     }
     prevKeyRef.current = apiKey;
   };
@@ -71,7 +71,7 @@ export default function SettingsPage() {
 
   const handleTestConnection = async () => {
     if (!apiKey.trim()) {
-      toast.error("Enter an API key first");
+      toast.error('Enter an API key first');
       return;
     }
 
@@ -81,15 +81,14 @@ export default function SettingsPage() {
         provider,
         model: model || getDefaultModel(provider),
         apiKey: apiKey.trim(),
-        messages: [{ role: "user", content: "Ping" }],
+        messages: [{ role: 'user', content: 'Ping' }],
         maxTokens: 32,
         temperature: 0,
       });
-      toast.success("Connection successful — API key is valid");
-      router.push("/app");
+      toast.success('Connection successful — API key is valid');
+      router.push('/app');
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Unknown error";
+      const message = err instanceof Error ? err.message : 'Unknown error';
       toast.error(`Connection failed: ${message}`);
     } finally {
       setTesting(false);
@@ -127,15 +126,13 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-2">
             <Label htmlFor="api-key">
               API Key
-              <span className="ml-1 text-xs text-muted-foreground">
-                ({providerLabel})
-              </span>
+              <span className="text-muted-foreground ml-1 text-xs">({providerLabel})</span>
             </Label>
             <div className="relative">
               <Input
                 id="api-key"
-                type={showKey ? "text" : "password"}
-                placeholder={provider === "deepseek" ? "sk-..." : "Enter your API key"}
+                type={showKey ? 'text' : 'password'}
+                placeholder={provider === 'deepseek' ? 'sk-...' : 'Enter your API key'}
                 value={apiKey}
                 onChange={(e) => handleApiKeyChange(e.target.value)}
                 onBlur={handleKeyBlur}
@@ -144,19 +141,15 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showKey ? "Hide key" : "Show key"}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+                aria-label={showKey ? 'Hide key' : 'Show key'}
               >
-                {showKey ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
+                {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Your key is stored locally in your browser. Nothing leaves your
-              machine except direct API calls to the provider.
+            <p className="text-muted-foreground text-xs">
+              Your key is stored locally in your browser. Nothing leaves your machine except direct
+              API calls to the provider.
             </p>
           </div>
 
@@ -175,19 +168,15 @@ export default function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {models.find((o) => o.value === model)?.desc ??
-                "Select a model to see its description"}
+                'Select a model to see its description'}
             </p>
           </div>
 
           <Separator />
 
-          <Button
-            variant="outline"
-            onClick={handleTestConnection}
-            disabled={testing}
-          >
+          <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
             {testing ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (

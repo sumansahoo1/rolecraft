@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 export interface PageFitResult {
   fits: boolean;
@@ -29,9 +29,9 @@ export function measureHtmlPageFit(
     const pageHeight = Math.round(usableHeightIn * PX_PER_IN);
 
     // Create hidden iframe to isolate resume CSS from host page
-    const iframe = document.createElement("iframe");
+    const iframe = document.createElement('iframe');
     iframe.style.cssText =
-      "position:fixed;left:-9999px;top:0;width:8.5in;height:11in;border:0;visibility:hidden;z-index:-1;";
+      'position:fixed;left:-9999px;top:0;width:8.5in;height:11in;border:0;visibility:hidden;z-index:-1;';
     document.body.appendChild(iframe);
 
     const cleanup = () => {
@@ -90,7 +90,7 @@ export function measureHtmlPageFit(
           });
         };
 
-        if (iframeDoc.fonts && iframeDoc.fonts.status === "loading") {
+        if (iframeDoc.fonts && iframeDoc.fonts.status === 'loading') {
           iframeDoc.fonts.ready.then(doMeasure).catch(doMeasure);
         } else {
           // Small delay to let layout settle
@@ -126,7 +126,7 @@ export function measureAtWidth(
   heightIn: number
 ): Promise<PageFitResult> {
   return new Promise((resolve) => {
-    const iframe = document.createElement("iframe");
+    const iframe = document.createElement('iframe');
     iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${widthIn}in;height:${heightIn}in;border:0;visibility:hidden;z-index:-1;`;
     document.body.appendChild(iframe);
 
@@ -146,7 +146,7 @@ export function measureAtWidth(
           estPages: Math.ceil(contentHeight / pageHeight),
         });
       };
-      if (iframeDoc.fonts?.status === "loading") {
+      if (iframeDoc.fonts?.status === 'loading') {
         iframeDoc.fonts.ready.then(doMeasure);
       } else {
         setTimeout(doMeasure, 50);

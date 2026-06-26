@@ -1,15 +1,13 @@
-import type { ResumeCritique, RevisionPlan } from "@/types";
-import { categorizeSuggestions, getCategoryLabel, CATEGORY_PRIORITY } from "./classification";
-import { TOP_SUGGESTIONS_COUNT } from "./constants";
+import type { ResumeCritique, RevisionPlan } from '@/types';
+import { categorizeSuggestions, getCategoryLabel, CATEGORY_PRIORITY } from './classification';
+import { TOP_SUGGESTIONS_COUNT } from './constants';
 
 /** Build a prioritized revision plan from a critique result. */
 export function buildRevisionPlan(
   critique: ResumeCritique,
   previousPlan?: RevisionPlan
 ): RevisionPlan {
-  const cats =
-    critique.categorizedSuggestions ??
-    categorizeSuggestions(critique.suggestions);
+  const cats = critique.categorizedSuggestions ?? categorizeSuggestions(critique.suggestions);
 
   // Flatten in priority order
   const topSuggestions: string[] = [];
@@ -27,12 +25,13 @@ export function buildRevisionPlan(
 
   if (previousPlan) {
     const addressedWeaknesses = new Set(
-      (critique.previousWeaknessesAddressed ?? []).map((w) =>
-        w.toLowerCase().trim()
-      )
+      (critique.previousWeaknessesAddressed ?? []).map((w) => w.toLowerCase().trim())
     );
     for (const s of previousPlan.topSuggestions) {
-      const stripped = s.replace(/^\[.*?\]\s*/, "").toLowerCase().trim();
+      const stripped = s
+        .replace(/^\[.*?\]\s*/, '')
+        .toLowerCase()
+        .trim();
       // Check if any addressed weakness overlaps with this suggestion
       const wasAddressed = [...addressedWeaknesses].some(
         (aw) => aw.includes(stripped.substring(0, 20)) || stripped.includes(aw.substring(0, 20))

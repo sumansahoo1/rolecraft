@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from 'react';
 import {
   createChatCompletion,
   extractJsonFromLLMResponse,
@@ -10,9 +10,14 @@ import {
   RESUME_REVISION_PROMPT,
   RESUME_CRITIQUE_PROMPT,
   RESUME_SPEC_GENERATION_PROMPT,
-} from "@/lib/ai";
-import { getApiKey, getModel, getProvider } from "@/lib/storage";
-import { generateLatexSource, getLatexEngine, shrinkSpecToFit, buildLatexVerificationResult } from "@/lib/latex";
+} from '@/lib/ai';
+import { getApiKey, getModel, getProvider } from '@/lib/storage';
+import {
+  generateLatexSource,
+  getLatexEngine,
+  shrinkSpecToFit,
+  buildLatexVerificationResult,
+} from '@/lib/latex';
 import {
   computeResumeTextSimilarity,
   buildCritiqueContext,
@@ -24,7 +29,7 @@ import {
   RESUME_SIMILARITY_THRESHOLD,
   RESUME_GENERATION_TEMPERATURE,
   DEFAULT_STEP_TEMPERATURE,
-} from "@/lib/pipeline";
+} from '@/lib/pipeline';
 import type {
   MasterResume,
   JDAnalysis,
@@ -34,8 +39,8 @@ import type {
   ConvergenceResult,
   ResumeSpec,
   LatexVerificationResult,
-} from "@/types";
-import { TOKEN_BUDGETS } from "@/types";
+} from '@/types';
+import { TOKEN_BUDGETS } from '@/types';
 
 export interface PipelineState {
   running: boolean;
@@ -89,26 +94,26 @@ export function usePipeline() {
       temperatureOverride?: number
     ) => {
       const apiKey = getApiKey();
-      if (!apiKey) throw new Error("API key not set");
+      if (!apiKey) throw new Error('API key not set');
 
       let systemPrompt: string;
       if (systemPromptOverride) {
         systemPrompt = systemPromptOverride;
       } else {
         switch (step) {
-          case "jd-analysis":
+          case 'jd-analysis':
             systemPrompt = JD_ANALYSIS_PROMPT;
             break;
-          case "experience-mapping":
+          case 'experience-mapping':
             systemPrompt = EXPERIENCE_MAPPING_PROMPT;
             break;
-          case "resume-generation":
+          case 'resume-generation':
             systemPrompt = RESUME_GENERATION_PROMPT;
             break;
-          case "resume-critique":
+          case 'resume-critique':
             systemPrompt = RESUME_CRITIQUE_PROMPT;
             break;
-          case "resume-spec":
+          case 'resume-spec':
             systemPrompt = RESUME_SPEC_GENERATION_PROMPT;
             break;
           default:
@@ -117,7 +122,8 @@ export function usePipeline() {
         }
       }
 
-      const defaultTemp = step === "resume-generation" ? RESUME_GENERATION_TEMPERATURE : DEFAULT_STEP_TEMPERATURE;
+      const defaultTemp =
+        step === 'resume-generation' ? RESUME_GENERATION_TEMPERATURE : DEFAULT_STEP_TEMPERATURE;
       const temperature = temperatureOverride ?? defaultTemp;
 
       const res = await createChatCompletion({
@@ -125,8 +131,8 @@ export function usePipeline() {
         model: getModel(),
         apiKey,
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: context },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: context },
         ],
         temperature,
         maxTokens: TOKEN_BUDGETS[step],
@@ -142,7 +148,7 @@ export function usePipeline() {
       abortRef.current = false;
       setState({
         running: true,
-        currentStep: "jd-analysis",
+        currentStep: 'jd-analysis',
         error: null,
         analysis: null,
         mapping: null,
@@ -164,41 +170,38 @@ export function usePipeline() {
         setState((s) => ({
           ...s,
           running: false,
-          error: "API key not set. Go to Settings.",
+          error: 'API key not set. Go to Settings.',
         }));
         return;
       }
 
       try {
         // Step 1: JD Analysis
-        const analysisRaw = await runStep(
-          "jd-analysis",
-          `Analyze this job description:\n\n${jd}`
-        );
+        const analysisRaw = await runStep('jd-analysis', `Analyze this job description:\n\n${jd}`);
         if (abortRef.current) return;
         const analysis = extractJsonFromLLMResponse(analysisRaw) as JDAnalysis;
         setState((s) => ({
           ...s,
-          currentStep: "experience-mapping",
+          currentStep: 'experience-mapping',
           analysis,
         }));
 
         // Step 2: Experience Mapping
         const mappingRaw = await runStep(
-          "experience-mapping",
+          'experience-mapping',
           `Job Analysis:\n${JSON.stringify(analysis, null, 2)}\n\nCandidate Master Resume:\n${JSON.stringify(masterResume, null, 2)}`
         );
         if (abortRef.current) return;
         const mapping = extractJsonFromLLMResponse(mappingRaw) as ExperienceMapping;
         setState((s) => ({
           ...s,
-          currentStep: "resume-generation",
+          currentStep: 'resume-generation',
           mapping,
         }));
 
         // Step 3: Initial Resume Generation
         const resumeRaw = await runStep(
-          "resume-generation",
+          'resume-generation',
           `TARGET ROLE: ${analysis.roleTitle}\n\nJOB ANALYSIS:\n${JSON.stringify(analysis, null, 2)}\n\nEXPERIENCE MAPPING (what to feature, what to downplay):\n${JSON.stringify(mapping, null, 2)}\n\nMASTER RESUME (source of truth — USE ONLY THIS DATA):\n${JSON.stringify(masterResume, null, 2)}`
         );
         if (abortRef.current) return;
@@ -220,7 +223,7 @@ export function usePipeline() {
           iteration++;
           setState((s) => ({
             ...s,
-            currentStep: "resume-critique",
+            currentStep: 'resume-critique',
             currentResume: resume,
             iteration,
           }));
@@ -241,7 +244,7 @@ export function usePipeline() {
                 bestScore,
                 convergenceResult: {
                   isConverged: true,
-                  reason: "no_resume_change",
+                  reason: 'no_resume_change',
                   scoreDelta: null,
                   newWeaknesses: [],
                 },
@@ -259,7 +262,7 @@ export function usePipeline() {
             iteration,
             localHistory
           );
-          const critiqueRaw = await runStep("resume-critique", critiqueContext);
+          const critiqueRaw = await runStep('resume-critique', critiqueContext);
           if (abortRef.current) return;
 
           critique = extractJsonFromLLMResponse(critiqueRaw) as ResumeCritique;
@@ -313,7 +316,7 @@ export function usePipeline() {
               masterResume
             );
             const regenRaw = await runStep(
-              "resume-generation",
+              'resume-generation',
               regenContext,
               RESUME_REVISION_PROMPT,
               0.3 // Lower temperature for surgical edits
@@ -331,11 +334,11 @@ export function usePipeline() {
         // Step 5: Generate ResumeSpec from best text resume
         setState((s) => ({
           ...s,
-          currentStep: "resume-spec",
+          currentStep: 'resume-spec',
         }));
 
         const specRaw = await runStep(
-          "resume-spec",
+          'resume-spec',
           `Target Role: ${analysis.roleTitle}\n\nConvert this resume into the structured format:\n\n${bestResume}`
         );
         if (abortRef.current) return;
@@ -362,7 +365,8 @@ export function usePipeline() {
             running: false,
             currentStep: null,
             currentResume: bestResume,
-            error: "Failed to parse ResumeSpec from AI response. The text resume is available for download.",
+            error:
+              'Failed to parse ResumeSpec from AI response. The text resume is available for download.',
             critique,
             iteration,
             history: [...localHistory],
@@ -375,7 +379,7 @@ export function usePipeline() {
         // Step 6: Generate LaTeX source from ResumeSpec (deterministic)
         setState((s) => ({
           ...s,
-          currentStep: "latex-generation",
+          currentStep: 'latex-generation',
           resumeSpec,
         }));
 
@@ -386,7 +390,7 @@ export function usePipeline() {
         // Step 7: Render resume as HTML for preview and PDF
         setState((s) => ({
           ...s,
-          currentStep: "latex-verification",
+          currentStep: 'latex-verification',
           latexSource,
         }));
 
@@ -435,7 +439,7 @@ export function usePipeline() {
           bestScore,
         }));
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Pipeline failed";
+        const message = err instanceof Error ? err.message : 'Pipeline failed';
         setState((s) => ({ ...s, running: false, error: message }));
       }
     },

@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Play, Square, FileText, AlertTriangle, Copy } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PipelineProgress } from "@/components/pipeline/PipelineProgress";
-import { JDAnalysisPanel } from "@/components/pipeline/JDAnalysisPanel";
-import { ExperienceMappingPanel } from "@/components/pipeline/ExperienceMappingPanel";
-import { ResumeDisplay } from "@/components/pipeline/ResumeDisplay";
-import { CritiquePanel } from "@/components/pipeline/CritiquePanel";
-import VerificationPanel from "@/components/pipeline/VerificationPanel";
-import { usePipeline } from "@/hooks/usePipeline";
-import { getMasterResume, getApiKey } from "@/lib/storage";
-import type { MasterResume } from "@/types";
-import { copyToClipboard } from "@/lib/export";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Play, Square, FileText, AlertTriangle, Copy } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PipelineProgress } from '@/components/pipeline/PipelineProgress';
+import { JDAnalysisPanel } from '@/components/pipeline/JDAnalysisPanel';
+import { ExperienceMappingPanel } from '@/components/pipeline/ExperienceMappingPanel';
+import { ResumeDisplay } from '@/components/pipeline/ResumeDisplay';
+import { CritiquePanel } from '@/components/pipeline/CritiquePanel';
+import VerificationPanel from '@/components/pipeline/VerificationPanel';
+import { usePipeline } from '@/hooks/usePipeline';
+import { getMasterResume, getApiKey } from '@/lib/storage';
+import type { MasterResume } from '@/types';
+import { copyToClipboard } from '@/lib/export';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const EXAMPLE_JD = `Senior Frontend Engineer
 
@@ -37,8 +37,8 @@ Requirements:
 export default function BuilderPage() {
   const router = useRouter();
   const pipeline = usePipeline();
-  const [jd, setJd] = useState("");
-  const [activeTab, setActiveTab] = useState("analysis");
+  const [jd, setJd] = useState('');
+  const [activeTab, setActiveTab] = useState('analysis');
   const [userPickedTab, setUserPickedTab] = useState(false);
   const [masterResume, setMasterResume] = useState<MasterResume | null>(null);
   const [resumeLoaded, setResumeLoaded] = useState(false);
@@ -52,32 +52,33 @@ export default function BuilderPage() {
 
   const handleRun = () => {
     if (!jd.trim()) {
-      toast.error("Paste a job description first");
+      toast.error('Paste a job description first');
       return;
     }
     if (!masterResume) {
-      toast.error("No master resume found. Add one first.");
-      router.push("/app/resume");
+      toast.error('No master resume found. Add one first.');
+      router.push('/app/resume');
       return;
     }
     const apiKey = getApiKey();
     if (!apiKey) {
-      toast.error("Set your DeepSeek API key in Settings first");
-      router.push("/app/settings");
+      toast.error('Set your DeepSeek API key in Settings first');
+      router.push('/app/settings');
       return;
     }
 
-    setActiveTab("analysis");
+    setActiveTab('analysis');
     setUserPickedTab(false);
     pipeline.run(jd, masterResume);
   };
 
   const pipelineDone = !pipeline.running && pipeline.currentResume != null;
   const latexAvailable = !pipeline.running && pipeline.latexSource != null;
-  const latexPhase = pipeline.running &&
-    (pipeline.currentStep === "resume-spec" ||
-     pipeline.currentStep === "latex-generation" ||
-     pipeline.currentStep === "latex-verification");
+  const latexPhase =
+    pipeline.running &&
+    (pipeline.currentStep === 'resume-spec' ||
+      pipeline.currentStep === 'latex-generation' ||
+      pipeline.currentStep === 'latex-verification');
 
   const isConverged =
     pipeline.critique?.score != null &&
@@ -91,9 +92,8 @@ export default function BuilderPage() {
   };
 
   // Auto-advance to LaTeX tab when it becomes available
-  const displayTab = pipelineDone && !userPickedTab
-    ? (latexAvailable ? "latex" : "resume")
-    : activeTab;
+  const displayTab =
+    pipelineDone && !userPickedTab ? (latexAvailable ? 'latex' : 'resume') : activeTab;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -119,14 +119,10 @@ export default function BuilderPage() {
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-8">
               <AlertTriangle className="size-6 text-yellow-600" />
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-center text-sm">
                 No master resume found. Add your resume first to start building.
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/app/resume")}
-              >
+              <Button variant="outline" size="sm" onClick={() => router.push('/app/resume')}>
                 <FileText className="mr-1.5 size-3.5" />
                 Add Master Resume
               </Button>
@@ -148,11 +144,7 @@ export default function BuilderPage() {
                   Generate Resume
                 </Button>
               ) : (
-                <Button
-                  variant="destructive"
-                  onClick={pipeline.cancel}
-                  className="flex-1"
-                >
+                <Button variant="destructive" onClick={pipeline.cancel} className="flex-1">
                   <Square className="mr-1.5 size-4" />
                   Cancel
                 </Button>
@@ -185,7 +177,7 @@ export default function BuilderPage() {
         </div>
 
         {pipeline.error && (
-          <div className="mx-6 mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="border-destructive/50 bg-destructive/10 text-destructive mx-6 mt-4 rounded-lg border p-4 text-sm">
             {pipeline.error}
           </div>
         )}
@@ -193,8 +185,8 @@ export default function BuilderPage() {
         {!pipeline.analysis && !pipeline.running && !pipeline.error && (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
-              <FileText className="mx-auto size-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm text-muted-foreground">
+              <FileText className="text-muted-foreground/40 mx-auto size-10" />
+              <p className="text-muted-foreground mt-3 text-sm">
                 Paste a job description and click Generate Resume
               </p>
             </div>
@@ -207,21 +199,21 @@ export default function BuilderPage() {
               <div>
                 <p className="text-sm font-semibold text-green-700 dark:text-green-400">
                   {isConverged
-                    ? "Resume Converged!"
+                    ? 'Resume Converged!'
                     : `Resume Ready (${pipeline.iteration} iterations)`}
-                  {latexAvailable && " • LaTeX Generated"}
+                  {latexAvailable && ' • LaTeX Generated'}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {isConverged
                     ? `Score: ${pipeline.critique?.score}/100 — ATS Score: ${pipeline.critique?.atsScore}/100`
                     : `Max iterations reached. Best score: ${pipeline.bestScore}/100.`}
                   {pipeline.convergenceResult?.reason &&
-                    pipeline.convergenceResult.reason !== "llm_judgment" &&
-                    ` • Stopped: ${pipeline.convergenceResult.reason.replace(/_/g, " ")}`}
+                    pipeline.convergenceResult.reason !== 'llm_judgment' &&
+                    ` • Stopped: ${pipeline.convergenceResult.reason.replace(/_/g, ' ')}`}
                 </p>
                 {pipeline.bestScore > (pipeline.critique?.score ?? 0) && (
                   <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-                    Best resume (score {pipeline.bestScore}) shown. Last iteration scored{" "}
+                    Best resume (score {pipeline.bestScore}) shown. Last iteration scored{' '}
                     {pipeline.critique?.score}.
                   </p>
                 )}
@@ -248,22 +240,18 @@ export default function BuilderPage() {
               <TabsList>
                 <TabsTrigger value="analysis">
                   Analysis
-                  {pipeline.analysis && (
-                    <CheckBadge className="ml-1.5 size-3 text-green-600" />
-                  )}
+                  {pipeline.analysis && <CheckBadge className="ml-1.5 size-3 text-green-600" />}
                 </TabsTrigger>
                 <TabsTrigger value="mapping">
                   Mapping
-                  {pipeline.mapping && (
-                    <CheckBadge className="ml-1.5 size-3 text-green-600" />
-                  )}
+                  {pipeline.mapping && <CheckBadge className="ml-1.5 size-3 text-green-600" />}
                 </TabsTrigger>
                 <TabsTrigger
                   value="resume"
                   className={
                     pipelineDone && !userPickedTab && !latexAvailable
-                      ? "ring-2 ring-green-500/50"
-                      : ""
+                      ? 'ring-2 ring-green-500/50'
+                      : ''
                   }
                 >
                   Text
@@ -273,17 +261,11 @@ export default function BuilderPage() {
                 </TabsTrigger>
                 <TabsTrigger value="critique">
                   Critique
-                  {pipeline.critique && (
-                    <CheckBadge className="ml-1.5 size-3 text-green-600" />
-                  )}
+                  {pipeline.critique && <CheckBadge className="ml-1.5 size-3 text-green-600" />}
                 </TabsTrigger>
                 <TabsTrigger
                   value="latex"
-                  className={
-                    latexAvailable && !userPickedTab
-                      ? "ring-2 ring-green-500/50"
-                      : ""
-                  }
+                  className={latexAvailable && !userPickedTab ? 'ring-2 ring-green-500/50' : ''}
                 >
                   LaTeX
                   {pipeline.latexSource && (
@@ -292,13 +274,12 @@ export default function BuilderPage() {
                 </TabsTrigger>
                 <TabsTrigger value="verify">
                   Verify
-                  {pipeline.latexVerification && (
-                    pipeline.latexVerification.passes ? (
+                  {pipeline.latexVerification &&
+                    (pipeline.latexVerification.passes ? (
                       <CheckBadge className="ml-1.5 size-3 text-green-600" />
                     ) : (
                       <span className="ml-1.5 flex size-2 rounded-full bg-amber-500" />
-                    )
-                  )}
+                    ))}
                 </TabsTrigger>
               </TabsList>
 
@@ -307,11 +288,10 @@ export default function BuilderPage() {
                   <ErrorBoundary>
                     <JDAnalysisPanel data={pipeline.analysis} />
                   </ErrorBoundary>
-                ) : pipeline.running &&
-                  pipeline.currentStep === "jd-analysis" ? (
+                ) : pipeline.running && pipeline.currentStep === 'jd-analysis' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for JD analysis...
                   </p>
                 )}
@@ -322,11 +302,10 @@ export default function BuilderPage() {
                   <ErrorBoundary>
                     <ExperienceMappingPanel data={pipeline.mapping} />
                   </ErrorBoundary>
-                ) : pipeline.running &&
-                  pipeline.currentStep === "experience-mapping" ? (
+                ) : pipeline.running && pipeline.currentStep === 'experience-mapping' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for experience mapping...
                   </p>
                 )}
@@ -345,11 +324,11 @@ export default function BuilderPage() {
                     />
                   </ErrorBoundary>
                 ) : pipeline.running &&
-                  (pipeline.currentStep === "resume-generation" ||
-                    pipeline.currentStep === "resume-critique") ? (
+                  (pipeline.currentStep === 'resume-generation' ||
+                    pipeline.currentStep === 'resume-critique') ? (
                   <LoadingResume />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for resume generation...
                   </p>
                 )}
@@ -367,11 +346,10 @@ export default function BuilderPage() {
                       convergenceResult={pipeline.convergenceResult}
                     />
                   </ErrorBoundary>
-                ) : pipeline.running &&
-                  pipeline.currentStep === "resume-critique" ? (
+                ) : pipeline.running && pipeline.currentStep === 'resume-critique' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for critique...
                   </p>
                 )}
@@ -382,7 +360,7 @@ export default function BuilderPage() {
                 {pipeline.latexSource ? (
                   <ErrorBoundary>
                     <ResumeDisplay
-                      resume={pipeline.currentResume || ""}
+                      resume={pipeline.currentResume || ''}
                       iteration={pipeline.iteration}
                       bestScore={pipeline.bestScore}
                       totalIterations={pipeline.history.length}
@@ -397,7 +375,7 @@ export default function BuilderPage() {
                 ) : latexPhase ? (
                   <LoadingResume />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     LaTeX will be generated after the critique phase...
                   </p>
                 )}
@@ -407,15 +385,12 @@ export default function BuilderPage() {
               <TabsContent value="verify" className="mt-4">
                 {pipeline.latexVerification ? (
                   <ErrorBoundary>
-                    <VerificationPanel
-                      verification={pipeline.latexVerification}
-                    />
+                    <VerificationPanel verification={pipeline.latexVerification} />
                   </ErrorBoundary>
-                ) : latexPhase &&
-                  pipeline.currentStep === "latex-verification" ? (
+                ) : latexPhase && pipeline.currentStep === 'latex-verification' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Verification runs after LaTeX compilation...
                   </p>
                 )}

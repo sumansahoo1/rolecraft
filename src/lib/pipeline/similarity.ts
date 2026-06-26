@@ -14,7 +14,7 @@ export function computeResumeTextSimilarity(a: string, b: string): number {
   const normalize = (s: string): string[] =>
     s
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/[^a-z0-9\s]/g, '')
       .split(/\s+/)
       .filter((w) => w.length > 2);
   const aWords = new Set(normalize(a));

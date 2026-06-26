@@ -6,21 +6,21 @@
  * directly from the browser to the AI provider.
  */
 
-import type { StoredData, MasterResume, Provider } from "@/types";
+import type { StoredData, MasterResume, Provider } from '@/types';
 
 const KEYS = {
   // Legacy generic key (backward compat)
-  apiKey: "rolecraft_api_key",
+  apiKey: 'rolecraft_api_key',
   // Per-provider keys
-  provider: "rolecraft_provider",
-  apiKey_deepseek: "rolecraft_api_key_deepseek",
-  apiKey_openai: "rolecraft_api_key_openai",
-  apiKey_anthropic: "rolecraft_api_key_anthropic",
-  apiKey_google: "rolecraft_api_key_google",
-  apiKey_openrouter: "rolecraft_api_key_openrouter",
-  model: "rolecraft_model",
-  masterResume: "rolecraft_master_resume",
-  preferences: "rolecraft_preferences",
+  provider: 'rolecraft_provider',
+  apiKey_deepseek: 'rolecraft_api_key_deepseek',
+  apiKey_openai: 'rolecraft_api_key_openai',
+  apiKey_anthropic: 'rolecraft_api_key_anthropic',
+  apiKey_google: 'rolecraft_api_key_google',
+  apiKey_openrouter: 'rolecraft_api_key_openrouter',
+  model: 'rolecraft_model',
+  masterResume: 'rolecraft_master_resume',
+  preferences: 'rolecraft_preferences',
 } as const;
 
 const API_KEY_KEYS: Record<Provider, string> = {
@@ -34,12 +34,18 @@ const API_KEY_KEYS: Record<Provider, string> = {
 // ─── Provider ─────────────────────────────────────────────────
 
 export function getProvider(): Provider {
-  if (typeof window === "undefined") return "deepseek";
+  if (typeof window === 'undefined') return 'deepseek';
   const stored = localStorage.getItem(KEYS.provider);
-  if (stored === "deepseek" || stored === "openai" || stored === "anthropic" || stored === "google" || stored === "openrouter") {
+  if (
+    stored === 'deepseek' ||
+    stored === 'openai' ||
+    stored === 'anthropic' ||
+    stored === 'google' ||
+    stored === 'openrouter'
+  ) {
     return stored;
   }
-  return "deepseek";
+  return 'deepseek';
 }
 
 export function setProvider(provider: Provider): void {
@@ -49,7 +55,7 @@ export function setProvider(provider: Provider): void {
 // ─── API Key (per-provider + legacy compat) ───────────────────
 
 export function getApiKey(provider?: Provider): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
   // If a specific provider is requested, read its per-provider key
   if (provider) {
@@ -90,8 +96,8 @@ export function clearApiKey(): void {
 // ─── Model ───────────────────────────────────────────────────
 
 export function getModel(): string {
-  if (typeof window === "undefined") return "deepseek-v4-pro";
-  return localStorage.getItem(KEYS.model) ?? "deepseek-v4-pro";
+  if (typeof window === 'undefined') return 'deepseek-v4-pro';
+  return localStorage.getItem(KEYS.model) ?? 'deepseek-v4-pro';
 }
 
 export function setModel(model: string): void {
@@ -101,7 +107,7 @@ export function setModel(model: string): void {
 // ─── Master Resume ──────────────────────────────────────────
 
 export function getMasterResume(): MasterResume | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   const raw = localStorage.getItem(KEYS.masterResume);
   if (!raw) return null;
   try {
@@ -121,20 +127,18 @@ export function clearMasterResume(): void {
 
 // ─── Preferences ────────────────────────────────────────────
 
-export function getPreferences(): StoredData["preferences"] | null {
-  if (typeof window === "undefined") return null;
+export function getPreferences(): StoredData['preferences'] | null {
+  if (typeof window === 'undefined') return null;
   const raw = localStorage.getItem(KEYS.preferences);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as StoredData["preferences"];
+    return JSON.parse(raw) as StoredData['preferences'];
   } catch {
     return null;
   }
 }
 
-export function setPreferences(
-  prefs: NonNullable<StoredData["preferences"]>
-): void {
+export function setPreferences(prefs: NonNullable<StoredData['preferences']>): void {
   localStorage.setItem(KEYS.preferences, JSON.stringify(prefs));
 }
 

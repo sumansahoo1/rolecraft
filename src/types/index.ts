@@ -1,6 +1,6 @@
 // ─── AI Provider ────────────────────────────────────────────
 
-export type Provider = "deepseek" | "openai" | "anthropic" | "google" | "openrouter";
+export type Provider = 'deepseek' | 'openai' | 'anthropic' | 'google' | 'openrouter';
 
 export interface ProviderConfig {
   baseUrl: string;
@@ -78,13 +78,13 @@ export interface MasterResume {
 // ─── AI Pipeline Types ─────────────────────────────────────
 
 export type PipelineStep =
-  | "jd-analysis"
-  | "experience-mapping"
-  | "resume-generation"
-  | "resume-critique"
-  | "resume-spec"
-  | "latex-generation"
-  | "latex-verification";
+  | 'jd-analysis'
+  | 'experience-mapping'
+  | 'resume-generation'
+  | 'resume-critique'
+  | 'resume-spec'
+  | 'latex-generation'
+  | 'latex-verification';
 
 export interface JDAnalysis {
   roleTitle: string;
@@ -111,12 +111,7 @@ export interface ExperienceMapping {
   sectionsToDownplay: string[];
 }
 
-export type CritiqueCategory =
-  | "fabrication"
-  | "content"
-  | "impact"
-  | "ats"
-  | "clarity";
+export type CritiqueCategory = 'fabrication' | 'content' | 'impact' | 'ats' | 'clarity';
 
 export interface CategorizedSuggestions {
   fabrication: string[];
@@ -149,13 +144,13 @@ export interface RevisionPlan {
 export interface ConvergenceResult {
   isConverged: boolean;
   reason:
-    | "llm_judgment"
-    | "score_ceiling"
-    | "score_delta"
-    | "no_new_weaknesses"
-    | "no_resume_change"
-    | "stale_critique"
-    | "max_iterations";
+    | 'llm_judgment'
+    | 'score_ceiling'
+    | 'score_delta'
+    | 'no_new_weaknesses'
+    | 'no_resume_change'
+    | 'stale_critique'
+    | 'max_iterations';
   scoreDelta: number | null;
   newWeaknesses: string[];
 }
@@ -212,8 +207,8 @@ export interface LatexVerificationCheck {
 }
 
 export interface LatexVerificationIssue {
-  severity: "error" | "warning";
-  category: "compilation" | "page_count" | "missing_section" | "font" | "overflow" | "formatting";
+  severity: 'error' | 'warning';
+  category: 'compilation' | 'page_count' | 'missing_section' | 'font' | 'overflow' | 'formatting';
   message: string;
 }
 
@@ -228,13 +223,13 @@ export interface LatexVerificationResult {
 // ─── Pipeline State ────────────────────────────────────────
 
 export const TOKEN_BUDGETS: Record<PipelineStep, number> = {
-  "jd-analysis": 2048,
-  "experience-mapping": 2048,
-  "resume-generation": 8192,
-  "resume-critique": 6144,
-  "resume-spec": 8192,
-  "latex-generation": 0,
-  "latex-verification": 0,
+  'jd-analysis': 2048,
+  'experience-mapping': 2048,
+  'resume-generation': 8192,
+  'resume-critique': 6144,
+  'resume-spec': 8192,
+  'latex-generation': 0,
+  'latex-verification': 0,
 };
 
 // ─── Storage ────────────────────────────────────────────────
@@ -245,11 +240,11 @@ export interface StoredData {
   model?: string;
   masterResume?: MasterResume;
   preferences?: {
-    tone?: "professional" | "casual" | "technical";
-    format?: "bullet" | "paragraph";
+    tone?: 'professional' | 'casual' | 'technical';
+    format?: 'bullet' | 'paragraph';
   };
 }
 
 // ─── App Status ─────────────────────────────────────────────
 
-export type AppStatus = "idle" | "running" | "paused" | "complete" | "error";
+export type AppStatus = 'idle' | 'running' | 'paused' | 'complete' | 'error';

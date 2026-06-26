@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useRef, useEffect } from "react";
-import { Loader2, FileX } from "lucide-react";
+import { useRef, useEffect } from 'react';
+import { Loader2, FileX } from 'lucide-react';
 
 interface LaTeXPreviewProps {
   htmlBlob: Blob | null;
@@ -30,8 +30,8 @@ export default function LaTeXPreview({
   // Loading state
   if (isCompiling) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground gap-3">
-        <Loader2 className="animate-spin h-8 w-8" />
+      <div className="text-muted-foreground flex h-full min-h-[400px] flex-col items-center justify-center gap-3">
+        <Loader2 className="size-8 animate-spin" />
         <p className="text-sm">Rendering resume...</p>
       </div>
     );
@@ -40,9 +40,9 @@ export default function LaTeXPreview({
   // Error state
   if (compilationError) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-red-500 gap-3 p-6">
-        <p className="text-sm font-medium text-center">Error</p>
-        <pre className="text-xs text-red-400 bg-red-50 dark:bg-red-950/20 rounded p-3 max-w-full overflow-auto whitespace-pre-wrap break-all">
+      <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-3 p-6 text-red-500">
+        <p className="text-center text-sm font-medium">Error</p>
+        <pre className="max-w-full overflow-auto rounded bg-red-50 p-3 text-xs break-all whitespace-pre-wrap text-red-400 dark:bg-red-950/20">
           {compilationError}
         </pre>
       </div>
@@ -52,12 +52,10 @@ export default function LaTeXPreview({
   // Empty state
   if (!htmlBlob) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground gap-3">
-        <FileX className="h-12 w-12 opacity-30" />
+      <div className="text-muted-foreground flex h-full min-h-[400px] flex-col items-center justify-center gap-3">
+        <FileX className="size-12 opacity-30" />
         <p className="text-sm">No preview available</p>
-        <p className="text-xs text-muted-foreground">
-          Generate a resume to see the preview
-        </p>
+        <p className="text-muted-foreground text-xs">Generate a resume to see the preview</p>
       </div>
     );
   }
@@ -65,7 +63,7 @@ export default function LaTeXPreview({
   return (
     <iframe
       ref={iframeRef}
-      className="w-full h-full border-0 bg-white"
+      className="size-full border-0 bg-white"
       title="Resume Preview"
       sandbox="allow-same-origin"
     />

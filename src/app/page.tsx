@@ -1,36 +1,36 @@
-import { FileText, Search, GitBranch, RefreshCw, CheckCircle } from "lucide-react";
+import { FileText, Search, GitBranch, RefreshCw, CheckCircle } from 'lucide-react';
 
 const steps = [
   {
     icon: Search,
-    title: "JD Analysis",
-    desc: "Paste any job description — RoleCraft extracts key skills, requirements, and role context.",
+    title: 'JD Analysis',
+    desc: 'Paste any job description — RoleCraft extracts key skills, requirements, and role context.',
   },
   {
     icon: GitBranch,
-    title: "Experience Mapping",
-    desc: "Your master resume is mapped against the JD. Gaps and matches are identified.",
+    title: 'Experience Mapping',
+    desc: 'Your master resume is mapped against the JD. Gaps and matches are identified.',
   },
   {
     icon: FileText,
-    title: "Resume Generation",
-    desc: "A targeted resume is generated, optimized for ATS and recruiter review.",
+    title: 'Resume Generation',
+    desc: 'A targeted resume is generated, optimized for ATS and recruiter review.',
   },
   {
     icon: RefreshCw,
-    title: "Critique Loop",
-    desc: "The resume is critiqued, fixed, critiqued again — until it converges on perfection.",
+    title: 'Critique Loop',
+    desc: 'The resume is critiqued, fixed, critiqued again — until it converges on perfection.',
   },
   {
     icon: CheckCircle,
-    title: "Final Resume",
-    desc: "A polished, role-optimized resume ready to download or copy.",
+    title: 'Final Resume',
+    desc: 'A polished, role-optimized resume ready to download or copy.',
   },
 ];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-1 flex-col">
       {/* Hero */}
       <section className="flex flex-col items-center justify-center px-6 py-24 text-center">
         <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
@@ -68,16 +68,14 @@ export default function Home() {
             key={step.title}
             className="flex items-start gap-4 rounded-lg border border-zinc-200 p-5 dark:border-zinc-800"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#6366f1]/10 text-[#6366f1]">
-              <step.icon className="h-5 w-5" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#6366f1]/10 text-[#6366f1]">
+              <step.icon className="size-5" />
             </div>
             <div>
               <h3 className="font-medium">
                 <span className="text-zinc-400">0{i + 1}.</span> {step.title}
               </h3>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                {step.desc}
-              </p>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{step.desc}</p>
             </div>
           </div>
         ))}

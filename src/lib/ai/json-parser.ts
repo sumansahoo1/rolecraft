@@ -10,13 +10,13 @@
 export function extractJsonFromLLMResponse(raw: string): unknown {
   const trimmed = raw.trim();
   if (!trimmed) {
-    throw new Error("extractJsonFromLLMResponse: received empty string");
+    throw new Error('extractJsonFromLLMResponse: received empty string');
   }
 
   // Strip ```json / ``` fences
   const cleaned = trimmed
-    .replace(/```(?:json)?\s*\n?/gi, "")
-    .replace(/```\s*$/gm, "")
+    .replace(/```(?:json)?\s*\n?/gi, '')
+    .replace(/```\s*$/gm, '')
     .trim();
 
   // Attempt direct parse

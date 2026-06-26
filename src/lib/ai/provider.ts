@@ -1,8 +1,8 @@
-import type { Provider, ProviderConfig } from "@/types";
-import { sleep } from "@/lib/utils";
+import type { Provider, ProviderConfig } from '@/types';
+import { sleep } from '@/lib/utils';
 
 export interface ChatMessage {
-  role: "system" | "user" | "assistant";
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
@@ -30,70 +30,90 @@ export interface ChatCompletionResult {
 
 export const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
   deepseek: {
-    baseUrl: "https://api.deepseek.com",
-    chatEndpoint: "/chat/completions",
+    baseUrl: 'https://api.deepseek.com',
+    chatEndpoint: '/chat/completions',
     headers: (apiKey) => ({
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     }),
     models: [
-      { value: "deepseek-v4-pro", label: "Pro (deepseek-v4-pro)", desc: "Most capable model for complex tasks" },
-      { value: "deepseek-v4-flash", label: "Flash (deepseek-v4-flash)", desc: "Faster and cheaper for simpler tasks" },
+      {
+        value: 'deepseek-v4-pro',
+        label: 'Pro (deepseek-v4-pro)',
+        desc: 'Most capable model for complex tasks',
+      },
+      {
+        value: 'deepseek-v4-flash',
+        label: 'Flash (deepseek-v4-flash)',
+        desc: 'Faster and cheaper for simpler tasks',
+      },
     ],
-    defaultModel: "deepseek-v4-pro",
+    defaultModel: 'deepseek-v4-pro',
   },
   openai: {
-    baseUrl: "https://api.openai.com",
-    chatEndpoint: "/v1/chat/completions",
+    baseUrl: 'https://api.openai.com',
+    chatEndpoint: '/v1/chat/completions',
     headers: (apiKey) => ({
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     }),
     models: [
-      { value: "gpt-4o", label: "GPT-4o", desc: "Most capable multimodal model" },
-      { value: "gpt-4o-mini", label: "GPT-4o Mini", desc: "Fast and affordable" },
+      { value: 'gpt-4o', label: 'GPT-4o', desc: 'Most capable multimodal model' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini', desc: 'Fast and affordable' },
     ],
-    defaultModel: "gpt-4o",
+    defaultModel: 'gpt-4o',
   },
   anthropic: {
-    baseUrl: "https://api.anthropic.com",
-    chatEndpoint: "/v1/messages",
+    baseUrl: 'https://api.anthropic.com',
+    chatEndpoint: '/v1/messages',
     headers: (apiKey) => ({
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
     }),
     models: [
-      { value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4", desc: "Best balance of speed and capability" },
-      { value: "claude-opus-4-20250514", label: "Claude Opus 4", desc: "Most powerful" },
-      { value: "claude-haiku-4-20250514", label: "Claude Haiku 4", desc: "Fastest" },
+      {
+        value: 'claude-sonnet-4-20250514',
+        label: 'Claude Sonnet 4',
+        desc: 'Best balance of speed and capability',
+      },
+      { value: 'claude-opus-4-20250514', label: 'Claude Opus 4', desc: 'Most powerful' },
+      { value: 'claude-haiku-4-20250514', label: 'Claude Haiku 4', desc: 'Fastest' },
     ],
-    defaultModel: "claude-sonnet-4-20250514",
+    defaultModel: 'claude-sonnet-4-20250514',
   },
   google: {
-    baseUrl: "https://generativelanguage.googleapis.com",
-    chatEndpoint: "/v1beta/models/{model}:generateContent",
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    chatEndpoint: '/v1beta/models/{model}:generateContent',
     headers: () => ({
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     }),
     models: [
-      { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", desc: "Most capable" },
-      { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", desc: "Fast and efficient" },
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', desc: 'Most capable' },
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', desc: 'Fast and efficient' },
     ],
-    defaultModel: "gemini-2.5-pro",
+    defaultModel: 'gemini-2.5-pro',
   },
   openrouter: {
-    baseUrl: "https://openrouter.ai",
-    chatEndpoint: "/api/v1/chat/completions",
+    baseUrl: 'https://openrouter.ai',
+    chatEndpoint: '/api/v1/chat/completions',
     headers: (apiKey) => ({
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     }),
     models: [
-      { value: "openai/gpt-4o", label: "GPT-4o (OpenRouter)", desc: "OpenAI GPT-4o via OpenRouter" },
-      { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet 4 (OpenRouter)", desc: "Anthropic Claude Sonnet 4 via OpenRouter" },
+      {
+        value: 'openai/gpt-4o',
+        label: 'GPT-4o (OpenRouter)',
+        desc: 'OpenAI GPT-4o via OpenRouter',
+      },
+      {
+        value: 'anthropic/claude-sonnet-4',
+        label: 'Claude Sonnet 4 (OpenRouter)',
+        desc: 'Anthropic Claude Sonnet 4 via OpenRouter',
+      },
     ],
-    defaultModel: "openai/gpt-4o",
+    defaultModel: 'openai/gpt-4o',
   },
 };
 
@@ -128,20 +148,19 @@ function buildDeepSeekBody(opts: ChatCompletionOptions) {
     // Disable — we need structured JSON output, not chain-of-thought.
     // When thinking is enabled, content can be null/empty if all
     // tokens are consumed by reasoning.
-    thinking: { type: "disabled" as const },
+    thinking: { type: 'disabled' as const },
   };
 }
 
 function buildAnthropicBody(opts: ChatCompletionOptions) {
-  const systemMessages = opts.messages.filter((m) => m.role === "system");
-  const nonSystemMessages = opts.messages.filter((m) => m.role !== "system");
+  const systemMessages = opts.messages.filter((m) => m.role === 'system');
+  const nonSystemMessages = opts.messages.filter((m) => m.role !== 'system');
 
   return {
     model: opts.model,
     max_tokens: opts.maxTokens ?? 4096,
-    system: systemMessages.length > 0
-      ? systemMessages.map((m) => m.content).join("\n\n")
-      : undefined,
+    system:
+      systemMessages.length > 0 ? systemMessages.map((m) => m.content).join('\n\n') : undefined,
     messages: nonSystemMessages.map((m) => ({
       role: m.role,
       content: m.content,
@@ -154,7 +173,7 @@ function buildGoogleBody(opts: ChatCompletionOptions) {
   // Google uses a flat list of contents with role + parts
   // Map system + user/assistant messages into a single contents array
   const contents = opts.messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
+    role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
 
@@ -180,14 +199,14 @@ function buildGoogleBody(opts: ChatCompletionOptions) {
 
 function buildRequestBody(provider: Provider, opts: ChatCompletionOptions): unknown {
   switch (provider) {
-    case "deepseek":
+    case 'deepseek':
       return buildDeepSeekBody(opts);
-    case "openai":
-    case "openrouter":
+    case 'openai':
+    case 'openrouter':
       return buildOpenAICompatBody(opts);
-    case "anthropic":
+    case 'anthropic':
       return buildAnthropicBody(opts);
-    case "google":
+    case 'google':
       return buildGoogleBody(opts);
   }
 }
@@ -217,31 +236,29 @@ function parseAnthropicUsage(usage: any) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseResponseBody(provider: Provider, data: any): ChatCompletionResult {
   switch (provider) {
-    case "deepseek":
-    case "openai":
-    case "openrouter":
+    case 'deepseek':
+    case 'openai':
+    case 'openrouter':
       return {
         content: data.choices[0].message.content,
-        model: data.model ?? "",
+        model: data.model ?? '',
         provider,
         usage: parseOpenAIUsage(data.usage),
       };
-    case "anthropic":
+    case 'anthropic':
       return {
         content: data.content
-          .filter((c: { type: string }) => c.type === "text")
+          .filter((c: { type: string }) => c.type === 'text')
           .map((c: { text: string }) => c.text)
-          .join(""),
-        model: data.model ?? "",
+          .join(''),
+        model: data.model ?? '',
         provider,
         usage: parseAnthropicUsage(data.usage),
       };
-    case "google":
+    case 'google':
       return {
-        content: data.candidates[0].content.parts
-          .map((p: { text: string }) => p.text)
-          .join(""),
-        model: data.modelVersion ?? "",
+        content: data.candidates[0].content.parts.map((p: { text: string }) => p.text).join(''),
+        model: data.modelVersion ?? '',
         provider,
       };
   }
@@ -254,14 +271,14 @@ function buildUrl(provider: Provider, opts: ChatCompletionOptions): string {
   let endpoint = config.chatEndpoint;
 
   // Google: substitute {model} in the URL path
-  if (provider === "google") {
-    endpoint = endpoint.replace("{model}", opts.model);
+  if (provider === 'google') {
+    endpoint = endpoint.replace('{model}', opts.model);
   }
 
   let url = `${config.baseUrl}${endpoint}`;
 
   // Google: append API key as query parameter
-  if (provider === "google") {
+  if (provider === 'google') {
     url += `?key=${encodeURIComponent(opts.apiKey)}`;
   }
 
@@ -288,7 +305,7 @@ export async function createChatCompletion(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(url, {
-        method: "POST",
+        method: 'POST',
         headers: config.headers(opts.apiKey),
         body: JSON.stringify(body),
       });
@@ -314,14 +331,14 @@ export async function createChatCompletion(
       if (!result.content || result.content.trim().length === 0) {
         console.error(
           `[createChatCompletion] Empty content from ${opts.provider}. ` +
-          `status=${res.status} model=${opts.model} ` +
-          `dataKeys=${Object.keys(data).join(",")} ` +
-          `choices=${JSON.stringify(data.choices?.slice(0, 1))}`
+            `status=${res.status} model=${opts.model} ` +
+            `dataKeys=${Object.keys(data).join(',')} ` +
+            `choices=${JSON.stringify(data.choices?.slice(0, 1))}`
         );
         throw new Error(
           `${opts.provider} returned empty content. ` +
-          `Model "${opts.model}" may be invalid or API key may be unauthorized. ` +
-          `HTTP ${res.status}. Raw data keys: ${Object.keys(data).join(", ")}`
+            `Model "${opts.model}" may be invalid or API key may be unauthorized. ` +
+            `HTTP ${res.status}. Raw data keys: ${Object.keys(data).join(', ')}`
         );
       }
 
