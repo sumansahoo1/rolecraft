@@ -1,6 +1,20 @@
 // ─── AI Provider ────────────────────────────────────────────
 
-export type DeepSeekModel = "deepseek-v4-pro" | "deepseek-v4-flash";
+export type Provider = "deepseek" | "openai" | "anthropic" | "google" | "openrouter";
+
+export interface ProviderConfig {
+  baseUrl: string;
+  chatEndpoint: string;
+  headers: (apiKey: string) => Record<string, string>;
+  models: ModelOption[];
+  defaultModel: string;
+}
+
+export interface ModelOption {
+  value: string;
+  label: string;
+  desc: string;
+}
 
 // ─── Resume Data ────────────────────────────────────────────
 
@@ -74,6 +88,7 @@ export type PipelineStep =
 
 export interface JDAnalysis {
   roleTitle: string;
+  companyName?: string;
   requiredSkills: string[];
   niceToHaveSkills: string[];
   keyResponsibilities: string[];
@@ -222,35 +237,12 @@ export const TOKEN_BUDGETS: Record<PipelineStep, number> = {
   "latex-verification": 0,
 };
 
-export interface PipelineState {
-  jd: string;
-  masterResume: MasterResume;
-  step: PipelineStep;
-  analysis: JDAnalysis | null;
-  mapping: ExperienceMapping | null;
-  currentResume: string | null;
-  critique: ResumeCritique | null;
-  iteration: number;
-  history: Array<{
-    iteration: number;
-    resume: string;
-    critique: ResumeCritique;
-  }>;
-  bestResume: string | null;
-  bestScore: number;
-  convergenceResult: ConvergenceResult | null;
-  // LaTeX pipeline fields
-  resumeSpec: ResumeSpec | null;
-  latexSource: string | null;
-  latexHtmlBlob: Blob | null;
-  latexVerification: LatexVerificationResult | null;
-}
-
 // ─── Storage ────────────────────────────────────────────────
 
 export interface StoredData {
   apiKey?: string;
-  model?: DeepSeekModel;
+  provider?: Provider;
+  model?: string;
   masterResume?: MasterResume;
   preferences?: {
     tone?: "professional" | "casual" | "technical";

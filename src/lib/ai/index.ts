@@ -1,6 +1,6 @@
-export { createChatCompletion } from "./provider";
+export { createChatCompletion, PROVIDER_CONFIGS, getProviderConfig, getDefaultModel } from "./provider";
 export { extractJsonFromLLMResponse } from "./json-parser";
-export type { ChatMessage, ChatCompletionOptions } from "./provider";
+export type { ChatMessage, ChatCompletionOptions, ChatCompletionResult } from "./provider";
 export {
   RESUME_EXTRACTION_PROMPT,
   JD_ANALYSIS_PROMPT,
