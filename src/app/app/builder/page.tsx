@@ -340,6 +340,8 @@ export default function BuilderPage() {
                       iteration={pipeline.iteration}
                       bestScore={pipeline.bestScore}
                       totalIterations={pipeline.history.length}
+                      roleTitle={pipeline.analysis?.roleTitle}
+                      companyName={pipeline.analysis?.companyName}
                     />
                   </ErrorBoundary>
                 ) : pipeline.running &&
@@ -384,6 +386,8 @@ export default function BuilderPage() {
                       iteration={pipeline.iteration}
                       bestScore={pipeline.bestScore}
                       totalIterations={pipeline.history.length}
+                      roleTitle={pipeline.analysis?.roleTitle}
+                      companyName={pipeline.analysis?.companyName}
                       showLatex={true}
                       latexSource={pipeline.latexSource}
                       latexHtmlBlob={pipeline.latexHtmlBlob}
