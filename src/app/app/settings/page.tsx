@@ -16,41 +16,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { getApiKey, setApiKey, getModel, setModel } from "@/lib/storage";
-import { createChatCompletion } from "@/lib/ai";
-import type { DeepSeekModel } from "@/types";
-
-const MODEL_OPTIONS: { value: DeepSeekModel; label: string; desc: string }[] = [
-  {
-    value: "deepseek-v4-pro",
-    label: "V4 Pro",
-    desc: "Most capable model for complex tasks",
-  },
-  {
-    value: "deepseek-v4-flash",
-    label: "V4 Flash",
-    desc: "Faster and cheaper for simpler tasks",
-  },
-];
+import { getApiKey, setApiKey, getModel, setModel, getProvider, setProvider } from "@/lib/storage";
+import { createChatCompletion, PROVIDER_CONFIGS, getDefaultModel } from "@/lib/ai";
+import type { Provider } from "@/types";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [provider, setProviderState] = useState<Provider>("deepseek");
   const [apiKey, setApiKeyState] = useState("");
-  const [model, setModelState] = useState<DeepSeekModel>("deepseek-v4-pro");
+  const [model, setModelState] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const prevKeyRef = useRef(apiKey);
 
   // Load stored settings on client only to avoid hydration mismatch
   useEffect(() => {
+    const storedProvider = getProvider();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setApiKeyState(getApiKey() ?? "");
+    setProviderState(storedProvider);
+    setApiKeyState(getApiKey(storedProvider) ?? "");
     setModelState(getModel());
   }, []);
 
+  const handleProviderChange = (value: string | null) => {
+    if (!value) return;
+    const p = value as Provider;
+    setProviderState(p);
+    setProvider(p);
+    // Auto-select this provider's default model
+    const defaultModel = getDefaultModel(p);
+    setModelState(defaultModel);
+    setModel(defaultModel);
+    // Load this provider's stored API key
+    setApiKeyState(getApiKey(p) ?? "");
+  };
+
   const handleApiKeyChange = (value: string) => {
     setApiKeyState(value);
-    setApiKey(value);
+    setApiKey(value, provider);
   };
 
   const handleKeyBlur = () => {
@@ -62,9 +65,8 @@ export default function SettingsPage() {
 
   const handleModelChange = (value: string | null) => {
     if (!value) return;
-    const m = value as DeepSeekModel;
-    setModelState(m);
-    setModel(m);
+    setModelState(value);
+    setModel(value);
   };
 
   const handleTestConnection = async () => {
@@ -76,7 +78,8 @@ export default function SettingsPage() {
     setTesting(true);
     try {
       await createChatCompletion({
-        model,
+        provider,
+        model: model || getDefaultModel(provider),
         apiKey: apiKey.trim(),
         messages: [{ role: "user", content: "Ping" }],
         maxTokens: 32,
@@ -93,6 +96,9 @@ export default function SettingsPage() {
     }
   };
 
+  const models = PROVIDER_CONFIGS[provider].models;
+  const providerLabel = provider.charAt(0).toUpperCase() + provider.slice(1);
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-6">
       <Card className="w-full max-w-md">
@@ -100,13 +106,36 @@ export default function SettingsPage() {
           <CardTitle>Settings</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
+          {/* Provider selector */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="api-key">DeepSeek API Key</Label>
+            <Label htmlFor="provider-select">AI Provider</Label>
+            <Select value={provider} onValueChange={handleProviderChange}>
+              <SelectTrigger id="provider-select" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(PROVIDER_CONFIGS).map((p) => (
+                  <SelectItem key={p} value={p}>
+                    <span className="capitalize">{p}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* API key */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="api-key">
+              API Key
+              <span className="ml-1 text-xs text-muted-foreground">
+                ({providerLabel})
+              </span>
+            </Label>
             <div className="relative">
               <Input
                 id="api-key"
                 type={showKey ? "text" : "password"}
-                placeholder="sk-..."
+                placeholder={provider === "deepseek" ? "sk-..." : "Enter your API key"}
                 value={apiKey}
                 onChange={(e) => handleApiKeyChange(e.target.value)}
                 onBlur={handleKeyBlur}
@@ -127,26 +156,28 @@ export default function SettingsPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               Your key is stored locally in your browser. Nothing leaves your
-              machine except direct API calls to DeepSeek.
+              machine except direct API calls to the provider.
             </p>
           </div>
 
+          {/* Model selector (dynamic per provider) */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="model-select">Model</Label>
             <Select value={model} onValueChange={handleModelChange}>
               <SelectTrigger id="model-select" className="w-full">
-                <SelectValue />
+                <SelectValue placeholder="Select a model" />
               </SelectTrigger>
               <SelectContent>
-                {MODEL_OPTIONS.map((opt) => (
+                {models.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    <span className="mr-2">{opt.label}</span>
+                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              {MODEL_OPTIONS.find((o) => o.value === model)?.desc}
+              {models.find((o) => o.value === model)?.desc ??
+                "Select a model to see its description"}
             </p>
           </div>
 

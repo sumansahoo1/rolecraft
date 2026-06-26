@@ -7,3 +7,4 @@ export { measureHtmlPageFit } from "./measure";
 export type { PageFitResult } from "./measure";
 export { shrinkSpecToFit } from "./shrink";
 export type { ShrinkResult } from "./shrink";
+export { buildLatexVerificationResult } from "./verify-builder";

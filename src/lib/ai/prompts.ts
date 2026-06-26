@@ -77,7 +77,8 @@ export const JD_ANALYSIS_PROMPT = `You are an elite technical recruiter and job 
 Analyze the given job description across multiple dimensions. Return ONLY valid JSON with this exact structure:
 
 {
-  "roleTitle": "string (canonical role title)",
+  "roleTitle": "string (EXACT role title as stated in the JD — copy verbatim, do NOT paraphrase or normalize)",
+  "companyName": "string | null (company or organization name from the JD, null if not mentioned)",
   "requiredSkills": ["string (explicitly required technologies and skills)"],
   "niceToHaveSkills": ["string (preferred but not mandatory)"],
   "keyResponsibilities": ["string (primary duties from the JD)"],
@@ -334,7 +335,7 @@ Return ONLY valid JSON with this exact structure:
     "linkedin": "string | null",
     "github": "string | null (GitHub username or URL)",
     "portfolio": "string | null",
-    "targetRole": "string (infer from the resume content or set to empty string)"
+    "targetRole": "string (use the Target Role provided in the context — do NOT infer or change it)"
   },
   "summary": {
     "text": "string (the SUMMARY section text, exactly as-is)"

@@ -81,6 +81,31 @@ export function parseResumeSections(text: string): ResumeSection[] {
   return sections;
 }
 
+/** Build resume filename: {name}_{company}_{role}_{DDMMYYYY}_Resume.ext */
+export function buildResumeFilename(
+  ext: string,
+  opts?: {
+    name?: string | null;
+    company?: string | null;
+    role?: string | null;
+  }
+): string {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const date = `${dd}${mm}${yyyy}`;
+
+  const parts = [
+    opts?.name?.trim(),
+    opts?.company?.trim(),
+    opts?.role?.trim(),
+    date,
+  ].filter((p): p is string => Boolean(p));
+
+  return `${parts.join("_")}_Resume.${ext}`;
+}
+
 export async function copyToClipboard(text: string): Promise<void> {
   await navigator.clipboard.writeText(text);
   toast.success("Copied to clipboard");

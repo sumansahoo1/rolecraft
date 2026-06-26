@@ -10,6 +10,7 @@ import {
   downloadTxt,
   downloadDocx,
   downloadPdf,
+  buildResumeFilename,
 } from "@/lib/export";
 import LaTeXEditor from "./LaTeXEditor";
 
@@ -18,6 +19,9 @@ interface ResumeDisplayProps {
   iteration: number;
   bestScore?: number;
   totalIterations?: number;
+  // For dynamic download filenames
+  roleTitle?: string | null;
+  companyName?: string | null;
   // LaTeX mode props
   showLatex?: boolean;
   latexSource?: string | null;
@@ -30,6 +34,8 @@ export function ResumeDisplay({
   iteration,
   bestScore,
   totalIterations,
+  roleTitle,
+  companyName,
   showLatex,
   latexSource,
   latexHtmlBlob,
@@ -64,19 +70,22 @@ export function ResumeDisplay({
     async (type: "txt" | "docx" | "pdf") => {
       setExporting(type);
       setDropdownOpen(false);
+      const name = resumeSpec?.meta?.name ?? undefined;
+      const role = roleTitle ?? resumeSpec?.meta?.targetRole ?? undefined;
+      const filename = buildResumeFilename(type, { name, company: companyName, role });
       try {
         if (type === "txt") {
-          downloadTxt(resume);
+          downloadTxt(resume, filename);
         } else if (type === "docx") {
-          await downloadDocx(resume);
+          await downloadDocx(resume, filename);
         } else {
-          await downloadPdf(resume);
+          await downloadPdf(resume, filename);
         }
       } finally {
         setExporting(null);
       }
     },
-    [resume]
+    [resume, resumeSpec, roleTitle, companyName]
   );
 
   // LaTeX Mode: show editor instead of plain text
@@ -88,6 +97,8 @@ export function ResumeDisplay({
             initialSource={latexSource}
             initialHtmlBlob={latexHtmlBlob}
             resumeSpec={resumeSpec}
+            roleTitle={roleTitle}
+            companyName={companyName}
           />
         </div>
       </div>

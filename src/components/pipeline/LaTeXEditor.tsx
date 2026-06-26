@@ -12,19 +12,23 @@ import {
   Check,
 } from "lucide-react";
 import LaTeXPreview from "./LaTeXPreview";
-import { downloadTex, copyToClipboard } from "@/lib/export";
+import { downloadTex, copyToClipboard, buildResumeFilename } from "@/lib/export";
 import { renderResumeHtml } from "@/lib/latex/render";
 
 interface LaTeXEditorProps {
   initialSource: string;
   initialHtmlBlob?: Blob | null;
   resumeSpec?: import("@/types").ResumeSpec | null;
+  roleTitle?: string | null;
+  companyName?: string | null;
 }
 
 export default function LaTeXEditor({
   initialSource,
   initialHtmlBlob,
   resumeSpec,
+  roleTitle,
+  companyName,
 }: LaTeXEditorProps) {
   const [source, setSource] = useState(initialSource);
   const [htmlBlob, setHtmlBlob] = useState<Blob | null>(
@@ -68,7 +72,10 @@ export default function LaTeXEditor({
 
   const handleDownloadTex = () => {
     if (source) {
-      downloadTex(source);
+      const name = resumeSpec?.meta?.name ?? undefined;
+      const role = roleTitle ?? resumeSpec?.meta?.targetRole ?? undefined;
+      const filename = buildResumeFilename("tex", { name, company: companyName, role });
+      downloadTex(source, filename);
     }
   };
 
@@ -79,15 +86,12 @@ export default function LaTeXEditor({
       const w = window.open(url, "_blank");
       if (w) {
         w.onload = () => {
-          // Build filename: {name}_{targetRole}_{DDMMYYYY}_Resume
-          const name = resumeSpec?.meta?.name ?? "";
-          const targetRole = resumeSpec?.meta?.targetRole ?? "";
-          const now = new Date();
-          const dd = String(now.getDate()).padStart(2, "0");
-          const mm = String(now.getMonth() + 1).padStart(2, "0");
-          const yyyy = now.getFullYear();
-          const parts = [name, targetRole, `${dd}${mm}${yyyy}`].filter(Boolean);
-          try { w.document.title = `${parts.join("_")}_Resume`; } catch { /* cross-origin */ }
+          // Build filename: {name}_{company}_{role}_{DDMMYYYY}_Resume
+          const name = resumeSpec?.meta?.name ?? undefined;
+          const role = roleTitle ?? resumeSpec?.meta?.targetRole ?? undefined;
+          const title = buildResumeFilename("pdf", { name, company: companyName, role })
+            .replace(/\.pdf$/, ""); // strip extension for document.title
+          try { w.document.title = title; } catch { /* cross-origin */ }
           w.print();
         };
         // Clean up after print dialog closes (typical: 2 min max)

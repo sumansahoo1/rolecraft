@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createChatCompletion, extractJsonFromLLMResponse, RESUME_EXTRACTION_PROMPT } from "@/lib/ai";
-import { getApiKey, getModel } from "@/lib/storage";
+import { getApiKey, getModel, getProvider } from "@/lib/storage";
 import type { MasterResume, Project, OpenSource, OtherWork } from "@/types";
 
 interface ExtractionState {
@@ -87,6 +87,7 @@ export function useResumeExtraction() {
 
     try {
       const res = await createChatCompletion({
+        provider: getProvider(),
         model: getModel(),
         apiKey,
         messages: [
