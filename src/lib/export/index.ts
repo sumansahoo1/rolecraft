@@ -11,6 +11,8 @@ import {
 } from "docx";
 import { jsPDF } from "jspdf";
 import type { ResumeSpec } from "@/types";
+import { renderResumeHtml } from "@/lib/latex/render";
+import { measureHtmlPageFit } from "@/lib/latex/measure";
 
 export interface ResumeSection {
   heading: string;
@@ -253,74 +255,42 @@ export async function generatePdfBlob(resume: string): Promise<Blob> {
 export async function generateSpecPdfBlob(
   spec: ResumeSpec
 ): Promise<{ blob: Blob; finalY: number; pageHeight: number; marginBottom: number }> {
-  // ─── Calculate content density (character-aware) ───
-  const totalBulletChars =
-    spec.experience.reduce((sum, e) => sum + e.bullets.join("").length, 0) +
-    spec.projects.reduce((sum, p) => sum + p.bullets.join("").length, 0);
-
-  // Estimate wrapped lines: chars per line ≈ 90 at 8.5pt on letter
-  const estBulletLines = Math.ceil(totalBulletChars / 90);
-  const summaryChars = spec.summary.text?.length ?? 0;
-  const summaryLines = Math.ceil(summaryChars / 95);
-
-  // Contact line length
-  const contactChars =
-    (spec.meta.email?.length ?? 0) +
-    (spec.meta.phone?.length ?? 0) +
-    (spec.meta.location?.length ?? 0) +
-    (spec.meta.linkedin?.length ?? 0) +
-    (spec.meta.github?.length ?? 0) +
-    (spec.meta.portfolio?.length ?? 0);
-  const contactLines = contactChars > 80 ? 2 : 1;
-
-  const expCount = spec.experience.length;
-  const projCount = spec.projects.length;
-  const skillCats = spec.skills.categories.length;
-  const eduCount = spec.education.length;
-
-  // Density: total estimated lines of content
-  const estTotalLines =
-    estBulletLines +
-    summaryLines * 1.1 +
-    contactLines * 0.7 +
-    expCount * 2.5 +      // role header = ~2.5 lines of space
-    projCount * 1.8 +      // project header = ~1.8 lines
-    skillCats * 1.3 +
-    eduCount * 1.2 +
-    5; // section headings overhead
-
-  // Usable height: ~756pt (792 - 36 margin)
-  // Each line at default spacing takes ~11pt
-  // So max lines ≈ 756 / 11 ≈ 68 lines
-  const maxLines = 65;
-
-  // Select font preset based on how much we exceed or fit
+  // ─── Measure content density via iframe ───
+  // Render HTML at default sizing (body 8.5pt, matching the "medium" jsPDF preset)
+  // and measure actual overflow via the browser layout engine.
   let bodySize: number;
   let lineSpacing: number;
   let headSize: number;
   let sectionSize: number;
   let nameSize: number;
 
-  const ratio = estTotalLines / maxLines;
+  try {
+    const html = renderResumeHtml(spec);
+    const fit = await measureHtmlPageFit(html);
+    const ratio =
+      fit.pageHeight > 0
+        ? (fit.scrollHeight - fit.pageHeight) / fit.pageHeight
+        : 0;
 
-  if (ratio < 0.5) {
-    // Very light
-    bodySize = 9.5; lineSpacing = 13; headSize = 10; sectionSize = 11; nameSize = 18;
-  } else if (ratio < 0.7) {
-    // Light
-    bodySize = 9; lineSpacing = 12; headSize = 9.5; sectionSize = 10.5; nameSize = 17;
-  } else if (ratio < 0.9) {
-    // Medium
+    if (ratio <= 0) {
+      // Fits comfortably — light
+      bodySize = 9; lineSpacing = 12; headSize = 9.5; sectionSize = 10.5; nameSize = 17;
+    } else if (ratio < 0.15) {
+      // Barely over — medium
+      bodySize = 8.5; lineSpacing = 11; headSize = 9; sectionSize = 10; nameSize = 16;
+    } else if (ratio < 0.35) {
+      // Moderately over — snug
+      bodySize = 8; lineSpacing = 10; headSize = 8.5; sectionSize = 9.5; nameSize = 15;
+    } else if (ratio < 0.6) {
+      // Significantly over — tight
+      bodySize = 7.5; lineSpacing = 9; headSize = 8; sectionSize = 9; nameSize = 14;
+    } else {
+      // Severely over — very tight
+      bodySize = 7; lineSpacing = 8.5; headSize = 7.5; sectionSize = 8.5; nameSize = 13;
+    }
+  } catch {
+    // Fallback: measurement failed (iframe unavailable), use medium preset
     bodySize = 8.5; lineSpacing = 11; headSize = 9; sectionSize = 10; nameSize = 16;
-  } else if (ratio < 1.1) {
-    // Snug
-    bodySize = 8; lineSpacing = 10; headSize = 8.5; sectionSize = 9.5; nameSize = 15;
-  } else if (ratio < 1.4) {
-    // Tight
-    bodySize = 7.5; lineSpacing = 9; headSize = 8; sectionSize = 9; nameSize = 14;
-  } else {
-    // Very tight
-    bodySize = 7; lineSpacing = 8.5; headSize = 7.5; sectionSize = 8.5; nameSize = 13;
   }
 
   const doc = new jsPDF({ unit: "pt", format: "letter" });
