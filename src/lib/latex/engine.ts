@@ -19,7 +19,7 @@ type EngineStatus =
 class LatexEngine {
   private _status: EngineStatus = "uninitialized";
   private _error: string | null = null;
-  private currentBlob: Blob | null = null;
+  private currentHtmlBlob: Blob | null = null;
 
   get status(): EngineStatus {
     return this._status;
@@ -29,8 +29,8 @@ class LatexEngine {
     return this._error;
   }
 
-  get pdfBlob(): Blob | null {
-    return this.currentBlob;
+  get htmlPreviewBlob(): Blob | null {
+    return this.currentHtmlBlob;
   }
 
   static isSupported(): boolean {
@@ -43,8 +43,8 @@ class LatexEngine {
   }
 
   /**
-   * Compile a ResumeSpec to PDF via HTML rendering + browser print-to-PDF.
-   * The rendered HTML is stored as a blob that can be previewed.
+   * Compile a ResumeSpec to an HTML preview blob.
+   * Use browser print-to-PDF for a true PDF.
    */
   async compile(spec: ResumeSpec): Promise<CompileResult> {
     this._status = "compiling";
@@ -53,7 +53,7 @@ class LatexEngine {
     try {
       const html = renderResumeHtml(spec);
       const htmlBlob = new Blob([html], { type: "text/html" });
-      this.currentBlob = htmlBlob;
+      this.currentHtmlBlob = htmlBlob;
 
       // For PDF download: use the HTML + print CSS (@page rules handle sizing)
       // The user can also download .tex and compile with a real LaTeX engine
@@ -83,11 +83,11 @@ class LatexEngine {
   }
 
   clearCache(): void {
-    this.currentBlob = null;
+    this.currentHtmlBlob = null;
   }
 
   dispose(): void {
-    this.currentBlob = null;
+    this.currentHtmlBlob = null;
     this._status = "uninitialized";
     this._error = null;
   }

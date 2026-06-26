@@ -16,6 +16,7 @@ import {
   getApiKey,
 } from "@/lib/storage";
 import type { MasterResume } from "@/types";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function ResumePage() {
   const router = useRouter();
@@ -64,7 +65,8 @@ export default function ResumePage() {
   const displayResume = result ?? saved;
 
   return (
-    <div className="flex-1 overflow-auto">
+    <ErrorBoundary>
+      <div className="flex-1 overflow-auto">
       <div className="mx-auto max-w-3xl px-6 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -118,5 +120,6 @@ export default function ResumePage() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
