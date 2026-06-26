@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   createChatCompletion,
+  extractJsonFromLLMResponse,
   JD_ANALYSIS_PROMPT,
   EXPERIENCE_MAPPING_PROMPT,
   RESUME_GENERATION_PROMPT,
@@ -35,6 +36,10 @@ const ATS_SCORE_CEILING = 90;
 const SCORE_DELTA_THRESHOLD = 3;
 const RESUME_SIMILARITY_THRESHOLD = 0.95; // Resume text ≥95% similar → unchanged
 const CRITIQUE_STALENESS_THRESHOLD = 0.8; // Weaknesses/suggestions ≥80% overlap → stale
+const MIN_ATS_SCORE_FOR_DELTA = 80; // Minimum ATS score before delta-based convergence
+const MIN_SCORE_FOR_LLM_JUDGMENT = 85; // Score threshold for LLM self-judgment convergence
+const RESUME_GENERATION_TEMPERATURE = 0.4;
+const DEFAULT_STEP_TEMPERATURE = 0.2;
 
 interface PipelineState {
   running: boolean;
@@ -59,15 +64,7 @@ interface PipelineState {
 // ─── Helper functions ───────────────────────────────────────────
 
 function parseJsonResponse(raw: string): unknown {
-  const cleaned = raw.replace(/```(?:json)?\s*\n?/gi, "").replace(/```\s*$/g, "").trim();
-  try { return JSON.parse(cleaned); } catch {}
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (match) {
-    try { return JSON.parse(match[0]); } catch {}
-  }
-  throw new Error(
-    `Failed to parse LLM response as JSON. Raw length: ${raw.length}. Last 200 chars: ...${raw.slice(-200)}`
-  );
+  return extractJsonFromLLMResponse(raw);
 }
 
 /** Keyword-based fallback classifier for when the LLM doesn't provide categorized suggestions. */
@@ -294,7 +291,7 @@ function checkAlgorithmicConvergence(
   //    Only applies when score is already decent AND ATS score is respectable
   if (previous && history.length >= 2) {
     const scoreDelta = current.score - previous.score;
-    if (scoreDelta < SCORE_DELTA_THRESHOLD && current.score >= MIN_SCORE_FOR_EARLY_EXIT && current.atsScore >= 80) {
+    if (scoreDelta < SCORE_DELTA_THRESHOLD && current.score >= MIN_SCORE_FOR_EARLY_EXIT && current.atsScore >= MIN_ATS_SCORE_FOR_DELTA) {
       // Check the last two deltas — if both are tiny, we've stagnated
       const prevPrev = history.length >= 2 ? history[history.length - 2].critique : null;
       if (prevPrev) {
@@ -332,7 +329,7 @@ function checkAlgorithmicConvergence(
   }
 
   // 5. LLM self-judgment
-  if (current.isConverged && current.score >= 85) {
+  if (current.isConverged && current.score >= MIN_SCORE_FOR_LLM_JUDGMENT) {
     return {
       isConverged: true,
       reason: "llm_judgment",
@@ -368,19 +365,15 @@ function extractRevisionReport(rawText: string): {
   const reportRaw = rawText.substring(idx + marker.length).trim();
 
   try {
-    // Extract JSON object from the report section
-    const jsonMatch = reportRaw.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const report = JSON.parse(jsonMatch[0]);
-      return {
-        resume,
-        report: {
-          addressedSuggestions: report.addressedSuggestions ?? [],
-          unaddressedSuggestions: report.unaddressedSuggestions ?? [],
-          unchangedSections: report.unchangedSections ?? [],
-        },
-      };
-    }
+    const report = extractJsonFromLLMResponse(reportRaw) as Record<string, unknown>;
+    return {
+      resume,
+      report: {
+        addressedSuggestions: (report.addressedSuggestions as string[]) ?? [],
+        unaddressedSuggestions: (report.unaddressedSuggestions as string[]) ?? [],
+        unchangedSections: (report.unchangedSections as string[]) ?? [],
+      },
+    };
   } catch {
     // Fall through to graceful fallback
   }
@@ -511,7 +504,7 @@ export function usePipeline() {
         }
       }
 
-      const defaultTemp = step === "resume-generation" ? 0.4 : 0.2;
+      const defaultTemp = step === "resume-generation" ? RESUME_GENERATION_TEMPERATURE : DEFAULT_STEP_TEMPERATURE;
       const temperature = temperatureOverride ?? defaultTemp;
 
       const res = await createChatCompletion({

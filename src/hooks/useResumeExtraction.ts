@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { createChatCompletion, RESUME_EXTRACTION_PROMPT } from "@/lib/ai";
+import { createChatCompletion, extractJsonFromLLMResponse, RESUME_EXTRACTION_PROMPT } from "@/lib/ai";
 import { getApiKey, getModel } from "@/lib/storage";
 import type { MasterResume, Project, OpenSource, OtherWork } from "@/types";
 
@@ -100,36 +100,35 @@ export function useResumeExtraction() {
         maxTokens: 8192,
       });
 
-      const jsonStr = res.content.replace(/```json\n?|```\n?/g, "").trim();
-      const raw = JSON.parse(jsonStr);
+      const raw = extractJsonFromLLMResponse(res.content) as Record<string, unknown>;
 
       const parsed: MasterResume = {
-        name: raw.name ?? "",
-        email: raw.email ?? "",
-        phone: raw.phone ?? null,
-        linkedin: raw.linkedin ?? null,
-        portfolio: raw.portfolio ?? null,
-        summary: raw.summary ?? "",
-        skills: Array.isArray(raw.skills) ? raw.skills : [],
+        name: (raw.name as string) ?? "",
+        email: (raw.email as string) ?? "",
+        phone: (raw.phone as string) ?? undefined,
+        linkedin: (raw.linkedin as string) ?? undefined,
+        portfolio: (raw.portfolio as string) ?? undefined,
+        summary: (raw.summary as string) ?? "",
+        skills: Array.isArray(raw.skills) ? (raw.skills as string[]) : [],
         experience: Array.isArray(raw.experience)
           ? raw.experience.map((e: Record<string, unknown>) => ({
-              company: e.company ?? "",
-              role: e.role ?? "",
-              duration: e.duration ?? "",
-              highlights: Array.isArray(e.highlights) ? e.highlights : [],
+              company: (e.company as string) ?? "",
+              role: (e.role as string) ?? "",
+              duration: (e.duration as string) ?? "",
+              highlights: Array.isArray(e.highlights) ? (e.highlights as string[]) : [],
             }))
           : [],
         education: Array.isArray(raw.education)
           ? raw.education.map((e: Record<string, unknown>) => ({
-              institution: e.institution ?? "",
-              degree: e.degree ?? "",
-              field: e.field ?? "",
-              year: e.year ?? "",
+              institution: (e.institution as string) ?? "",
+              degree: (e.degree as string) ?? "",
+              field: (e.field as string) ?? "",
+              year: (e.year as string) ?? "",
             }))
           : [],
         certifications: Array.isArray(raw.certifications)
-          ? raw.certifications
-          : null,
+          ? (raw.certifications as string[])
+          : undefined,
         projects: parseProjects(raw.projects),
         openSource: parseOpenSource(raw.openSource),
         otherWorks: parseOtherWorks(raw.otherWorks),

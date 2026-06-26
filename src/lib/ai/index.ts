@@ -1,4 +1,5 @@
 export { createChatCompletion } from "./provider";
+export { extractJsonFromLLMResponse } from "./json-parser";
 export type { ChatMessage, ChatCompletionOptions } from "./provider";
 export {
   RESUME_EXTRACTION_PROMPT,

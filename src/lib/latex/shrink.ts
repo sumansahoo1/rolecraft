@@ -77,7 +77,8 @@ const SHRINK_LEVELS: ShrinkFn[] = [
   },
 ];
 
-const FONT_SCALES = [0.95, 0.90, 0.85, 0.82, 0.78];
+/** Font scaling factors per shrink level. Each maps to the same-index entry in SHRINK_LEVELS. */
+const FONT_SCALES: readonly [number, number, number, number, number] = [0.95, 0.90, 0.85, 0.82, 0.78];
 
 /**
  * Progressively shrink a ResumeSpec until its rendered HTML fits on 1 letter page.
