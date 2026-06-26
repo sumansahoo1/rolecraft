@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import {
   CheckCircle2,
   XCircle,
@@ -10,8 +10,8 @@ import {
   Star,
   FolderKanban,
   MinusCircle,
-} from "lucide-react";
-import type { ExperienceMapping } from "@/types";
+} from 'lucide-react';
+import type { ExperienceMapping } from '@/types';
 
 interface ExperienceMappingPanelProps {
   data: ExperienceMapping;
@@ -20,19 +20,17 @@ interface ExperienceMappingPanelProps {
 export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
   const scoreColor =
     data.relevanceScore >= 75
-      ? "text-green-600 dark:text-green-400"
+      ? 'text-green-600 dark:text-green-400'
       : data.relevanceScore >= 50
-        ? "text-yellow-600 dark:text-yellow-400"
-        : "text-red-600 dark:text-red-400";
+        ? 'text-yellow-600 dark:text-yellow-400'
+        : 'text-red-600 dark:text-red-400';
 
   return (
     <div className="flex flex-col gap-4">
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">
-              Relevance Score
-            </p>
+            <p className="text-muted-foreground text-xs font-medium">Relevance Score</p>
             <div className="mt-2 flex items-center gap-3">
               <Progress value={data.relevanceScore} className="flex-1" />
               <span className={`text-lg font-bold tabular-nums ${scoreColor}`}>
@@ -46,7 +44,7 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
           <div>
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
               <CheckCircle2 className="size-3.5 text-green-600" />
               Matched Skills
             </p>
@@ -62,7 +60,7 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
             </div>
           </div>
           <div>
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
               <XCircle className="size-3.5 text-red-600" />
               Missing Skills
             </p>
@@ -85,9 +83,7 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
           <CardContent className="flex items-start gap-3 pt-4">
             <AlertTriangle className="size-4 shrink-0 text-yellow-600" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">
-                Experience Gap
-              </p>
+              <p className="text-muted-foreground text-xs font-medium">Experience Gap</p>
               <p className="text-sm">{data.experienceGap}</p>
             </div>
           </CardContent>
@@ -100,9 +96,7 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
           <CardContent className="flex flex-col gap-2 pt-4">
             <div className="flex items-center gap-1.5">
               <Star className="size-3.5 text-amber-600" />
-              <p className="text-xs font-medium text-muted-foreground">
-                Featured Experience
-              </p>
+              <p className="text-muted-foreground text-xs font-medium">Featured Experience</p>
             </div>
             <ul className="list-inside list-disc space-y-0.5 text-sm">
               {data.recommendedExperience.map((item, i) => (
@@ -119,9 +113,7 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
           <CardContent className="flex flex-col gap-2 pt-4">
             <div className="flex items-center gap-1.5">
               <FolderKanban className="size-3.5 text-blue-600" />
-              <p className="text-xs font-medium text-muted-foreground">
-                Featured Projects
-              </p>
+              <p className="text-muted-foreground text-xs font-medium">Featured Projects</p>
             </div>
             <ul className="list-inside list-disc space-y-0.5 text-sm">
               {data.recommendedProjects.map((item, i) => (
@@ -137,12 +129,10 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
         <Card>
           <CardContent className="flex flex-col gap-2 pt-4">
             <div className="flex items-center gap-1.5">
-              <MinusCircle className="size-3.5 text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground">
-                Downplayed / Removed
-              </p>
+              <MinusCircle className="text-muted-foreground size-3.5" />
+              <p className="text-muted-foreground text-xs font-medium">Downplayed / Removed</p>
             </div>
-            <ul className="list-inside list-disc space-y-0.5 text-sm text-muted-foreground">
+            <ul className="text-muted-foreground list-inside list-disc space-y-0.5 text-sm">
               {data.sectionsToDownplay.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
@@ -154,7 +144,7 @@ export function ExperienceMappingPanel({ data }: ExperienceMappingPanelProps) {
       {data.notes.length > 0 && (
         <Card>
           <CardContent className="flex flex-col gap-1.5 pt-4">
-            <p className="text-xs font-medium text-muted-foreground">Notes</p>
+            <p className="text-muted-foreground text-xs font-medium">Notes</p>
             <ul className="list-inside list-disc space-y-1 text-sm">
               {data.notes.map((note, i) => (
                 <li key={i}>{note}</li>

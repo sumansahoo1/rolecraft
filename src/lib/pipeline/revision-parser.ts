@@ -1,4 +1,4 @@
-import { extractJsonFromLLMResponse } from "@/lib/ai";
+import { extractJsonFromLLMResponse } from '@/lib/ai';
 
 /** Parse the revision report marker from LLM output. Falls back gracefully. */
 export function extractRevisionReport(rawText: string): {
@@ -9,7 +9,7 @@ export function extractRevisionReport(rawText: string): {
     unchangedSections: string[];
   } | null;
 } {
-  const marker = "---REVISION REPORT---";
+  const marker = '---REVISION REPORT---';
   const idx = rawText.indexOf(marker);
   if (idx === -1) {
     return { resume: rawText, report: null };

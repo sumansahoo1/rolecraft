@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { MasterResume } from "@/types";
+import type { MasterResume } from '@/types';
 
 // ─── Top-level list field CRUD ───────────────────────────────────
 
@@ -25,11 +25,9 @@ export function useListField<T>(
   field: keyof MasterResume,
   update: (field: keyof MasterResume, value: unknown) => void,
   empty: () => T,
-  required: boolean = false,
+  required: boolean = false
 ): ListFieldApi<T> {
-  const current = required
-    ? (resume[field] as T[])
-    : ((resume[field] ?? []) as T[]);
+  const current = required ? (resume[field] as T[]) : ((resume[field] ?? []) as T[]);
 
   return {
     items: current,
@@ -45,7 +43,10 @@ export function useListField<T>(
     },
 
     removeItem: (idx: number) => {
-      update(field, current.filter((_, i) => i !== idx));
+      update(
+        field,
+        current.filter((_, i) => i !== idx)
+      );
     },
   };
 }
@@ -71,7 +72,7 @@ export function createNestedStringHelpers(
   getParentItems: () => unknown[],
   nestedField: string,
   parentField: keyof MasterResume,
-  update: (field: keyof MasterResume, value: unknown) => void,
+  update: (field: keyof MasterResume, value: unknown) => void
 ): NestedStringHelpers {
   return {
     updateAt(parentIdx: number, childIdx: number, value: string) {
@@ -84,7 +85,7 @@ export function createNestedStringHelpers(
 
     addAt(parentIdx: number) {
       const items = [...getParentItems()] as Record<string, unknown>[];
-      const arr = [...((items[parentIdx][nestedField] as unknown[] | undefined) ?? []), ""];
+      const arr = [...((items[parentIdx][nestedField] as unknown[] | undefined) ?? []), ''];
       items[parentIdx] = { ...items[parentIdx], [nestedField]: arr };
       update(parentField, items);
     },
@@ -92,7 +93,7 @@ export function createNestedStringHelpers(
     removeAt(parentIdx: number, childIdx: number) {
       const items = [...getParentItems()] as Record<string, unknown>[];
       const arr = ((items[parentIdx][nestedField] as unknown[] | undefined) ?? []).filter(
-        (_, i) => i !== childIdx,
+        (_, i) => i !== childIdx
       );
       items[parentIdx] = { ...items[parentIdx], [nestedField]: arr };
       update(parentField, items);
@@ -118,7 +119,7 @@ export interface TagHelpers {
 export function createTagHelpers(
   getParentItems: () => unknown[],
   parentField: keyof MasterResume,
-  update: (field: keyof MasterResume, value: unknown) => void,
+  update: (field: keyof MasterResume, value: unknown) => void
 ): TagHelpers {
   return {
     add(parentIdx: number, value: string) {

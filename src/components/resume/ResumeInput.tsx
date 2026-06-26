@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useRef } from "react";
-import { Upload, FileText, Loader2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { extractTextFromPdf } from "@/lib/parse/pdf";
-import { extractTextFromDocx } from "@/lib/parse/docx";
+import { useState, useRef } from 'react';
+import { Upload, FileText, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { extractTextFromPdf } from '@/lib/parse/pdf';
+import { extractTextFromDocx } from '@/lib/parse/docx';
 
 interface ResumeInputProps {
   onExtract: (text: string) => void;
@@ -14,7 +14,7 @@ interface ResumeInputProps {
 }
 
 export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileLoading, setFileLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,16 +24,16 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
     setFileName(file.name);
     try {
       let extracted: string;
-      if (file.name.endsWith(".pdf")) {
+      if (file.name.endsWith('.pdf')) {
         extracted = await extractTextFromPdf(file);
-      } else if (file.name.endsWith(".docx")) {
+      } else if (file.name.endsWith('.docx')) {
         extracted = await extractTextFromDocx(file);
       } else {
         extracted = await file.text();
       }
       setText(extracted.slice(0, 20000));
     } catch {
-      setFileName("Failed to read file");
+      setFileName('Failed to read file');
     } finally {
       setFileLoading(false);
     }
@@ -66,19 +66,17 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
 
         <TabsContent value="upload" className="mt-4">
           <div
-            className="flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center transition-colors hover:border-muted-foreground/50"
+            className="border-muted-foreground/25 hover:border-muted-foreground/50 flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 text-center transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
             {fileLoading ? (
-              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              <Loader2 className="text-muted-foreground size-8 animate-spin" />
             ) : (
-              <Upload className="size-8 text-muted-foreground" />
+              <Upload className="text-muted-foreground size-8" />
             )}
             <div>
-              <p className="text-sm font-medium">
-                {fileName ?? "Click to upload"}
-              </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm font-medium">{fileName ?? 'Click to upload'}</p>
+              <p className="text-muted-foreground text-xs">
                 PDF, DOCX, or TXT (max ~20KB extracted)
               </p>
             </div>
@@ -103,11 +101,7 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
         </TabsContent>
       </Tabs>
 
-      <Button
-        onClick={handleExtract}
-        disabled={loading || !text.trim()}
-        className="w-full"
-      >
+      <Button onClick={handleExtract} disabled={loading || !text.trim()} className="w-full">
         {loading ? (
           <>
             <Loader2 className="mr-2 size-4 animate-spin" />

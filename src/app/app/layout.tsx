@@ -1,14 +1,10 @@
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AppSidebar } from '@/components/layout/AppSidebar';
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <AppSidebar />
-      <main className="pl-14 flex-1 flex flex-col">{children}</main>
+      <main className="flex flex-1 flex-col pl-14">{children}</main>
     </>
   );
 }

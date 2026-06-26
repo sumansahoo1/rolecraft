@@ -1,7 +1,7 @@
-import type { ResumeSpec } from "@/types";
-import { renderResumeHtml } from "./render";
-import { measureHtmlPageFit } from "./measure";
-import type { PageFitResult } from "./measure";
+import type { ResumeSpec } from '@/types';
+import { renderResumeHtml } from './render';
+import { measureHtmlPageFit } from './measure';
+import type { PageFitResult } from './measure';
 
 export interface ShrinkResult {
   spec: ResumeSpec;
@@ -19,7 +19,7 @@ type ShrinkFn = (spec: ResumeSpec) => ResumeSpec;
 function injectFontScale(html: string, scale: number): string {
   // Scale body font-size and all section-specific sizes
   return html.replace(
-    "</style>",
+    '</style>',
     `:root { --scale: ${scale}; }
     body { font-size: calc(var(--scale) * 8.5pt) !important; }
     .exp-bullets li, .proj-bullets li, .opt-bullets li { font-size: calc(var(--scale) * 8.5pt) !important; line-height: ${1.08 + scale * 0.1} !important; }
@@ -71,14 +71,16 @@ const SHRINK_LEVELS: ShrinkFn[] = [
         bullets: p.bullets.slice(0, 1),
       })),
       skills: {
-        categories: [{ name: "Skills", items: allSkills }],
+        categories: [{ name: 'Skills', items: allSkills }],
       },
     };
   },
 ];
 
 /** Font scaling factors per shrink level. Each maps to the same-index entry in SHRINK_LEVELS. */
-const FONT_SCALES: readonly [number, number, number, number, number] = [0.95, 0.90, 0.85, 0.82, 0.78];
+const FONT_SCALES: readonly [number, number, number, number, number] = [
+  0.95, 0.9, 0.85, 0.82, 0.78,
+];
 
 /**
  * Progressively shrink a ResumeSpec until its rendered HTML fits on 1 letter page.

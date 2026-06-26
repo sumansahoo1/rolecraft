@@ -1,12 +1,12 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   headers: async () => [
     {
-      source: "/(.*)",
+      source: '/(.*)',
       headers: [
         {
-          key: "Content-Security-Policy",
+          key: 'Content-Security-Policy',
           value: [
             "default-src 'self'",
             "connect-src 'self' https://api.deepseek.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai",
@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
             "font-src 'self' https://fonts.gstatic.com",
             "script-src 'self' 'unsafe-inline'",
             "frame-src 'self' blob:",
-          ].join("; "),
+          ].join('; '),
         },
       ],
     },

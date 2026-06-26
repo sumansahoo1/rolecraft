@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useRef } from "react";
-import { Download, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import type { MasterResume } from "@/types";
+import { useRef } from 'react';
+import { Download, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import type { MasterResume } from '@/types';
 
 interface JsonImportExportProps {
   resume: MasterResume | null;
@@ -17,15 +17,15 @@ export function JsonImportExport({ resume, onImport }: JsonImportExportProps) {
   const handleExport = () => {
     if (!resume) return;
     const blob = new Blob([JSON.stringify(resume, null, 2)], {
-      type: "application/json",
+      type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "rolecraft-master-resume.json";
+    a.download = 'rolecraft-master-resume.json';
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Resume exported as JSON");
+    toast.success('Resume exported as JSON');
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,9 +37,9 @@ export function JsonImportExport({ resume, onImport }: JsonImportExportProps) {
       try {
         const parsed = JSON.parse(reader.result as string) as MasterResume;
         onImport(parsed);
-        toast.success("Resume imported successfully");
+        toast.success('Resume imported successfully');
       } catch {
-        toast.error("Invalid JSON file");
+        toast.error('Invalid JSON file');
       }
     };
     reader.readAsText(file);
@@ -47,30 +47,15 @@ export function JsonImportExport({ resume, onImport }: JsonImportExportProps) {
 
   return (
     <div className="flex gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleExport}
-        disabled={!resume}
-      >
+      <Button variant="outline" size="sm" onClick={handleExport} disabled={!resume}>
         <Download className="mr-1.5 size-3.5" />
         Export JSON
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => fileRef.current?.click()}
-      >
+      <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
         <Upload className="mr-1.5 size-3.5" />
         Import JSON
       </Button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".json"
-        className="hidden"
-        onChange={handleImport}
-      />
+      <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
     </div>
   );
 }

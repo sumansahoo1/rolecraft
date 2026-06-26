@@ -1,43 +1,32 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Plus, Trash2, Save, Undo2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { Plus, Trash2, Save, Undo2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import {
-  useListField,
-  createNestedStringHelpers,
-  createTagHelpers,
-} from "@/hooks/useListField";
-import type {
-  MasterResume,
-  Experience,
-  Education,
-  Project,
-  OpenSource,
-  OtherWork,
-} from "@/types";
+} from '@/components/ui/select';
+import { useListField, createNestedStringHelpers, createTagHelpers } from '@/hooks/useListField';
+import type { MasterResume, Experience, Education, Project, OpenSource, OtherWork } from '@/types';
 
 const OTHER_WORK_TYPES = [
-  "publication",
-  "speaking",
-  "patent",
-  "award",
-  "volunteering",
-  "language",
-  "other",
+  'publication',
+  'speaking',
+  'patent',
+  'award',
+  'volunteering',
+  'language',
+  'other',
 ] as const;
 
 interface ResumeEditorProps {
@@ -47,46 +36,40 @@ interface ResumeEditorProps {
 }
 
 function emptyExperience(): Experience {
-  return { company: "", role: "", duration: "", highlights: [""] };
+  return { company: '', role: '', duration: '', highlights: [''] };
 }
 
 function emptyEducation(): Education {
-  return { institution: "", degree: "", field: "", year: "" };
+  return { institution: '', degree: '', field: '', year: '' };
 }
 
 function emptyProject(): Project {
-  return { name: "", description: "" };
+  return { name: '', description: '' };
 }
 
 function emptyOpenSource(): OpenSource {
-  return { name: "", description: "" };
+  return { name: '', description: '' };
 }
 
 function emptyOtherWork(): OtherWork {
-  return { title: "", type: "other", description: "" };
+  return { title: '', type: 'other', description: '' };
 }
 
-function migrateProjects(
-  projects: unknown | undefined,
-): Project[] | undefined {
+function migrateProjects(projects: unknown | undefined): Project[] | undefined {
   if (!Array.isArray(projects)) return undefined;
   if (projects.length === 0) return undefined;
-  if (typeof projects[0] === "string") {
-    return (projects as string[]).map((s) => ({ name: s, description: "" }));
+  if (typeof projects[0] === 'string') {
+    return (projects as string[]).map((s) => ({ name: s, description: '' }));
   }
   return projects as Project[];
 }
 
-export function ResumeEditor({
-  initial,
-  onSave,
-  onReExtract,
-}: ResumeEditorProps) {
+export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps) {
   const [resume, setResume] = useState<MasterResume>({
     ...initial,
     projects: migrateProjects(initial.projects),
   });
-  const [skillInput, setSkillInput] = useState("");
+  const [skillInput, setSkillInput] = useState('');
 
   const update = (field: keyof MasterResume, value: unknown) => {
     setResume((prev) => ({ ...prev, [field]: value }));
@@ -95,39 +78,47 @@ export function ResumeEditor({
   const addSkill = () => {
     const skill = skillInput.trim();
     if (skill && !resume.skills.includes(skill)) {
-      update("skills", [...resume.skills, skill]);
-      setSkillInput("");
+      update('skills', [...resume.skills, skill]);
+      setSkillInput('');
     }
   };
 
   const removeSkill = (skill: string) => {
-    update("skills", resume.skills.filter((s) => s !== skill));
+    update(
+      'skills',
+      resume.skills.filter((s) => s !== skill)
+    );
   };
 
   // ─── Generic list field CRUD ───
 
-  const exp = useListField(resume, "experience", update, emptyExperience, true);
-  const edu = useListField(resume, "education", update, emptyEducation, true);
-  const proj = useListField(resume, "projects", update, emptyProject, false);
-  const oss = useListField(resume, "openSource", update, emptyOpenSource, false);
-  const other = useListField(resume, "otherWorks", update, emptyOtherWork, false);
+  const exp = useListField(resume, 'experience', update, emptyExperience, true);
+  const edu = useListField(resume, 'education', update, emptyEducation, true);
+  const proj = useListField(resume, 'projects', update, emptyProject, false);
+  const oss = useListField(resume, 'openSource', update, emptyOpenSource, false);
+  const other = useListField(resume, 'otherWorks', update, emptyOtherWork, false);
 
   const expHL = createNestedStringHelpers(
-    () => resume.experience, "highlights", "experience", update,
+    () => resume.experience,
+    'highlights',
+    'experience',
+    update
   );
   const projHL = createNestedStringHelpers(
-    () => resume.projects ?? [], "highlights", "projects", update,
+    () => resume.projects ?? [],
+    'highlights',
+    'projects',
+    update
   );
   const ossHL = createNestedStringHelpers(
-    () => resume.openSource ?? [], "highlights", "openSource", update,
+    () => resume.openSource ?? [],
+    'highlights',
+    'openSource',
+    update
   );
 
-  const projTags = createTagHelpers(
-    () => resume.projects ?? [], "projects", update,
-  );
-  const ossTags = createTagHelpers(
-    () => resume.openSource ?? [], "openSource", update,
-  );
+  const projTags = createTagHelpers(() => resume.projects ?? [], 'projects', update);
+  const ossTags = createTagHelpers(() => resume.openSource ?? [], 'openSource', update);
 
   return (
     <div className="flex flex-col gap-6">
@@ -136,46 +127,43 @@ export function ResumeEditor({
         <CardContent className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label>Name</Label>
-            <Input
-              value={resume.name ?? ""}
-              onChange={(e) => update("name", e.target.value)}
-            />
+            <Input value={resume.name ?? ''} onChange={(e) => update('name', e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Email</Label>
             <Input
               type="email"
-              value={resume.email ?? ""}
-              onChange={(e) => update("email", e.target.value)}
+              value={resume.email ?? ''}
+              onChange={(e) => update('email', e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Phone</Label>
             <Input
-              value={resume.phone ?? ""}
-              onChange={(e) => update("phone", e.target.value || null)}
+              value={resume.phone ?? ''}
+              onChange={(e) => update('phone', e.target.value || null)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>LinkedIn</Label>
             <Input
-              value={resume.linkedin ?? ""}
-              onChange={(e) => update("linkedin", e.target.value || null)}
+              value={resume.linkedin ?? ''}
+              onChange={(e) => update('linkedin', e.target.value || null)}
             />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Portfolio</Label>
             <Input
-              value={resume.portfolio ?? ""}
-              onChange={(e) => update("portfolio", e.target.value || null)}
+              value={resume.portfolio ?? ''}
+              onChange={(e) => update('portfolio', e.target.value || null)}
             />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Summary</Label>
             <Textarea
               className="min-h-[80px] resize-y"
-              value={resume.summary ?? ""}
-              onChange={(e) => update("summary", e.target.value)}
+              value={resume.summary ?? ''}
+              onChange={(e) => update('summary', e.target.value)}
             />
           </div>
         </CardContent>
@@ -191,7 +179,7 @@ export function ResumeEditor({
                 {skill}
                 <button
                   onClick={() => removeSkill(skill)}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                  className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
                 >
                   <Trash2 className="size-3" />
                 </button>
@@ -203,7 +191,7 @@ export function ResumeEditor({
               placeholder="Add a skill..."
               value={skillInput}
               onChange={(e) => setSkillInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addSkill()}
+              onKeyDown={(e) => e.key === 'Enter' && addSkill()}
             />
             <Button variant="outline" size="sm" onClick={addSkill}>
               <Plus className="size-4" />
@@ -227,28 +215,22 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Company</Label>
                   <Input
-                    value={item.company ?? ""}
-                    onChange={(e) =>
-                      exp.updateItem(i, { ...item, company: e.target.value })
-                    }
+                    value={item.company ?? ''}
+                    onChange={(e) => exp.updateItem(i, { ...item, company: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Role</Label>
                   <Input
-                    value={item.role ?? ""}
-                    onChange={(e) =>
-                      exp.updateItem(i, { ...item, role: e.target.value })
-                    }
+                    value={item.role ?? ''}
+                    onChange={(e) => exp.updateItem(i, { ...item, role: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Duration</Label>
                   <Input
-                    value={item.duration ?? ""}
-                    onChange={(e) =>
-                      exp.updateItem(i, { ...item, duration: e.target.value })
-                    }
+                    value={item.duration ?? ''}
+                    onChange={(e) => exp.updateItem(i, { ...item, duration: e.target.value })}
                   />
                 </div>
               </div>
@@ -256,7 +238,7 @@ export function ResumeEditor({
                 {item.highlights.map((hl, j) => (
                   <div key={j} className="flex gap-2">
                     <Input
-                      value={hl ?? ""}
+                      value={hl ?? ''}
                       placeholder="Achievement or responsibility..."
                       onChange={(e) => expHL.updateAt(i, j, e.target.value)}
                     />
@@ -266,16 +248,11 @@ export function ResumeEditor({
                       onClick={() => expHL.removeAt(i, j)}
                       className="shrink-0"
                     >
-                      <Trash2 className="size-3.5 text-muted-foreground" />
+                      <Trash2 className="text-muted-foreground size-3.5" />
                     </Button>
                   </div>
                 ))}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => expHL.addAt(i)}
-                  className="w-fit"
-                >
+                <Button variant="ghost" size="sm" onClick={() => expHL.addAt(i)} className="w-fit">
                   <Plus className="mr-1 size-3.5" /> Add highlight
                 </Button>
               </div>
@@ -283,7 +260,7 @@ export function ResumeEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => exp.removeItem(i)}
-                className="mt-2 text-destructive"
+                className="text-destructive mt-2"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -307,37 +284,29 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Institution</Label>
                   <Input
-                    value={item.institution ?? ""}
-                    onChange={(e) =>
-                      edu.updateItem(i, { ...item, institution: e.target.value })
-                    }
+                    value={item.institution ?? ''}
+                    onChange={(e) => edu.updateItem(i, { ...item, institution: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Degree</Label>
                   <Input
-                    value={item.degree ?? ""}
-                    onChange={(e) =>
-                      edu.updateItem(i, { ...item, degree: e.target.value })
-                    }
+                    value={item.degree ?? ''}
+                    onChange={(e) => edu.updateItem(i, { ...item, degree: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Field</Label>
                   <Input
-                    value={item.field ?? ""}
-                    onChange={(e) =>
-                      edu.updateItem(i, { ...item, field: e.target.value })
-                    }
+                    value={item.field ?? ''}
+                    onChange={(e) => edu.updateItem(i, { ...item, field: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Year</Label>
                   <Input
-                    value={item.year ?? ""}
-                    onChange={(e) =>
-                      edu.updateItem(i, { ...item, year: e.target.value })
-                    }
+                    value={item.year ?? ''}
+                    onChange={(e) => edu.updateItem(i, { ...item, year: e.target.value })}
                   />
                 </div>
               </div>
@@ -345,7 +314,7 @@ export function ResumeEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => edu.removeItem(i)}
-                className="mt-2 text-destructive"
+                className="text-destructive mt-2"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -361,14 +330,14 @@ export function ResumeEditor({
             <Label>Certifications (one per line)</Label>
             <Textarea
               className="min-h-[60px] resize-y"
-              value={resume.certifications?.join("\n") ?? ""}
+              value={resume.certifications?.join('\n') ?? ''}
               onChange={(e) =>
                 update(
-                  "certifications",
+                  'certifications',
                   e.target.value
-                    .split("\n")
+                    .split('\n')
                     .map((s) => s.trim())
-                    .filter(Boolean),
+                    .filter(Boolean)
                 )
               }
             />
@@ -386,7 +355,7 @@ export function ResumeEditor({
             </Button>
           </div>
           {proj.items.length === 0 && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               No projects yet. Add personal projects, hackathons, freelance work, or side projects.
             </p>
           )}
@@ -396,16 +365,14 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Project Name</Label>
                   <Input
-                    value={item.name ?? ""}
-                    onChange={(e) =>
-                      proj.updateItem(i, { ...item, name: e.target.value })
-                    }
+                    value={item.name ?? ''}
+                    onChange={(e) => proj.updateItem(i, { ...item, name: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">URL</Label>
                   <Input
-                    value={item.url ?? ""}
+                    value={item.url ?? ''}
                     placeholder="https://..."
                     onChange={(e) =>
                       proj.updateItem(i, {
@@ -419,16 +386,14 @@ export function ResumeEditor({
                   <Label className="text-xs">Description</Label>
                   <Textarea
                     className="min-h-[50px] resize-y"
-                    value={item.description ?? ""}
-                    onChange={(e) =>
-                      proj.updateItem(i, { ...item, description: e.target.value })
-                    }
+                    value={item.description ?? ''}
+                    onChange={(e) => proj.updateItem(i, { ...item, description: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Duration</Label>
                   <Input
-                    value={item.duration ?? ""}
+                    value={item.duration ?? ''}
                     placeholder="e.g. Jan 2023 - Mar 2023"
                     onChange={(e) =>
                       proj.updateItem(i, {
@@ -444,15 +409,11 @@ export function ResumeEditor({
                 <Label className="text-xs">Technologies</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {(item.technologies ?? []).map((tech, tIdx) => (
-                    <Badge
-                      key={`${tech}-${tIdx}`}
-                      variant="secondary"
-                      className="gap-1 pr-1"
-                    >
+                    <Badge key={`${tech}-${tIdx}`} variant="secondary" className="gap-1 pr-1">
                       {tech}
                       <button
                         onClick={() => projTags.remove(i, tech)}
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                        className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
                       >
                         <Trash2 className="size-3" />
                       </button>
@@ -472,11 +433,9 @@ export function ResumeEditor({
                 {(item.highlights ?? []).map((hl, j) => (
                   <div key={j} className="flex gap-2">
                     <Input
-                      value={hl ?? ""}
+                      value={hl ?? ''}
                       placeholder="Key achievement or contribution..."
-                      onChange={(e) =>
-                        projHL.updateAt(i, j, e.target.value)
-                      }
+                      onChange={(e) => projHL.updateAt(i, j, e.target.value)}
                     />
                     <Button
                       variant="ghost"
@@ -484,16 +443,11 @@ export function ResumeEditor({
                       onClick={() => projHL.removeAt(i, j)}
                       className="shrink-0"
                     >
-                      <Trash2 className="size-3.5 text-muted-foreground" />
+                      <Trash2 className="text-muted-foreground size-3.5" />
                     </Button>
                   </div>
                 ))}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => projHL.addAt(i)}
-                  className="w-fit"
-                >
+                <Button variant="ghost" size="sm" onClick={() => projHL.addAt(i)} className="w-fit">
                   <Plus className="mr-1 size-3.5" /> Add highlight
                 </Button>
               </div>
@@ -502,7 +456,7 @@ export function ResumeEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => proj.removeItem(i)}
-                className="mt-2 text-destructive"
+                className="text-destructive mt-2"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -521,8 +475,9 @@ export function ResumeEditor({
             </Button>
           </div>
           {oss.items.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No open source contributions yet. Add repositories you maintain, contribute to, or significant PRs.
+            <p className="text-muted-foreground text-sm">
+              No open source contributions yet. Add repositories you maintain, contribute to, or
+              significant PRs.
             </p>
           )}
           {oss.items.map((item, i) => (
@@ -531,16 +486,14 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Name</Label>
                   <Input
-                    value={item.name ?? ""}
-                    onChange={(e) =>
-                      oss.updateItem(i, { ...item, name: e.target.value })
-                    }
+                    value={item.name ?? ''}
+                    onChange={(e) => oss.updateItem(i, { ...item, name: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">URL</Label>
                   <Input
-                    value={item.url ?? ""}
+                    value={item.url ?? ''}
                     placeholder="https://..."
                     onChange={(e) =>
                       oss.updateItem(i, {
@@ -553,7 +506,7 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Role</Label>
                   <Input
-                    value={item.role ?? ""}
+                    value={item.role ?? ''}
                     placeholder="e.g. maintainer, contributor"
                     onChange={(e) =>
                       oss.updateItem(i, {
@@ -567,7 +520,7 @@ export function ResumeEditor({
                   <Label className="text-xs">Description</Label>
                   <Textarea
                     className="min-h-[50px] resize-y"
-                    value={item.description ?? ""}
+                    value={item.description ?? ''}
                     onChange={(e) =>
                       oss.updateItem(i, {
                         ...item,
@@ -582,25 +535,18 @@ export function ResumeEditor({
                 <Label className="text-xs">Technologies</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {(item.technologies ?? []).map((tech, tIdx) => (
-                    <Badge
-                      key={`${tech}-${tIdx}`}
-                      variant="secondary"
-                      className="gap-1 pr-1"
-                    >
+                    <Badge key={`${tech}-${tIdx}`} variant="secondary" className="gap-1 pr-1">
                       {tech}
                       <button
                         onClick={() => ossTags.remove(i, tech)}
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                        className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
                       >
                         <Trash2 className="size-3" />
                       </button>
                     </Badge>
                   ))}
                 </div>
-                <AddTagInput
-                  placeholder="Add technology..."
-                  onAdd={(val) => ossTags.add(i, val)}
-                />
+                <AddTagInput placeholder="Add technology..." onAdd={(val) => ossTags.add(i, val)} />
               </div>
 
               <Separator className="my-3" />
@@ -610,11 +556,9 @@ export function ResumeEditor({
                 {(item.highlights ?? []).map((hl, j) => (
                   <div key={j} className="flex gap-2">
                     <Input
-                      value={hl ?? ""}
+                      value={hl ?? ''}
                       placeholder="Key contribution or impact..."
-                      onChange={(e) =>
-                        ossHL.updateAt(i, j, e.target.value)
-                      }
+                      onChange={(e) => ossHL.updateAt(i, j, e.target.value)}
                     />
                     <Button
                       variant="ghost"
@@ -622,16 +566,11 @@ export function ResumeEditor({
                       onClick={() => ossHL.removeAt(i, j)}
                       className="shrink-0"
                     >
-                      <Trash2 className="size-3.5 text-muted-foreground" />
+                      <Trash2 className="text-muted-foreground size-3.5" />
                     </Button>
                   </div>
                 ))}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => ossHL.addAt(i)}
-                  className="w-fit"
-                >
+                <Button variant="ghost" size="sm" onClick={() => ossHL.addAt(i)} className="w-fit">
                   <Plus className="mr-1 size-3.5" /> Add highlight
                 </Button>
               </div>
@@ -640,7 +579,7 @@ export function ResumeEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => oss.removeItem(i)}
-                className="mt-2 text-destructive"
+                className="text-destructive mt-2"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -659,8 +598,9 @@ export function ResumeEditor({
             </Button>
           </div>
           {other.items.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No other works yet. Add publications, speaking engagements, patents, awards, volunteering, or languages.
+            <p className="text-muted-foreground text-sm">
+              No other works yet. Add publications, speaking engagements, patents, awards,
+              volunteering, or languages.
             </p>
           )}
           {other.items.map((item, i) => (
@@ -669,18 +609,16 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Title</Label>
                   <Input
-                    value={item.title ?? ""}
-                    onChange={(e) =>
-                      other.updateItem(i, { ...item, title: e.target.value })
-                    }
+                    value={item.title ?? ''}
+                    onChange={(e) => other.updateItem(i, { ...item, title: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Type</Label>
                   <Select
-                    value={item.type ?? "other"}
+                    value={item.type ?? 'other'}
                     onValueChange={(value) =>
-                      other.updateItem(i, { ...item, type: value ?? "other" })
+                      other.updateItem(i, { ...item, type: value ?? 'other' })
                     }
                   >
                     <SelectTrigger className="w-full">
@@ -698,7 +636,7 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">URL</Label>
                   <Input
-                    value={item.url ?? ""}
+                    value={item.url ?? ''}
                     placeholder="https://..."
                     onChange={(e) =>
                       other.updateItem(i, {
@@ -711,7 +649,7 @@ export function ResumeEditor({
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Date</Label>
                   <Input
-                    value={item.date ?? ""}
+                    value={item.date ?? ''}
                     placeholder="e.g. 2024 or Mar 2024"
                     onChange={(e) =>
                       other.updateItem(i, {
@@ -725,7 +663,7 @@ export function ResumeEditor({
                   <Label className="text-xs">Description</Label>
                   <Textarea
                     className="min-h-[50px] resize-y"
-                    value={item.description ?? ""}
+                    value={item.description ?? ''}
                     onChange={(e) =>
                       other.updateItem(i, {
                         ...item,
@@ -739,7 +677,7 @@ export function ResumeEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => other.removeItem(i)}
-                className="mt-2 text-destructive"
+                className="text-destructive mt-2"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -770,13 +708,13 @@ function AddTagInput({
   placeholder: string;
   onAdd: (value: string) => void;
 }) {
-  const [val, setVal] = useState("");
+  const [val, setVal] = useState('');
 
   const handleAdd = () => {
     const trimmed = val.trim();
     if (trimmed) {
       onAdd(trimmed);
-      setVal("");
+      setVal('');
     }
   };
 
@@ -786,7 +724,7 @@ function AddTagInput({
         placeholder={placeholder}
         value={val}
         onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
       />
       <Button variant="outline" size="sm" onClick={handleAdd}>
         <Plus className="size-4" />

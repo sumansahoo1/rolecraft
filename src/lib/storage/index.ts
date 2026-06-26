@@ -13,4 +13,4 @@ export {
   setPreferences,
   getAllStoredData,
   clearAll,
-} from "./local";
+} from './local';
