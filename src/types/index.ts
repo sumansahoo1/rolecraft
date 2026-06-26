@@ -1,6 +1,6 @@
 // ─── AI Provider ────────────────────────────────────────────
 
-export type DeepSeekModel = "deepseek-chat" | "deepseek-flash";
+export type DeepSeekModel = "deepseek-v4-pro" | "deepseek-v4-flash";
 
 // ─── Resume Data ────────────────────────────────────────────
 

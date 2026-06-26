@@ -22,13 +22,13 @@ import type { DeepSeekModel } from "@/types";
 
 const MODEL_OPTIONS: { value: DeepSeekModel; label: string; desc: string }[] = [
   {
-    value: "deepseek-chat",
-    label: "Pro (deepseek-chat)",
+    value: "deepseek-v4-pro",
+    label: "V4 Pro",
     desc: "Most capable model for complex tasks",
   },
   {
-    value: "deepseek-flash",
-    label: "Flash (deepseek-flash)",
+    value: "deepseek-v4-flash",
+    label: "V4 Flash",
     desc: "Faster and cheaper for simpler tasks",
   },
 ];
@@ -36,7 +36,7 @@ const MODEL_OPTIONS: { value: DeepSeekModel; label: string; desc: string }[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const [apiKey, setApiKeyState] = useState("");
-  const [model, setModelState] = useState<DeepSeekModel>("deepseek-chat");
+  const [model, setModelState] = useState<DeepSeekModel>("deepseek-v4-pro");
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const prevKeyRef = useRef(apiKey);

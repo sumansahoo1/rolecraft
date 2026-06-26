@@ -33,8 +33,8 @@ export function clearApiKey(): void {
 // ─── Model ───────────────────────────────────────────────────
 
 export function getModel(): DeepSeekModel {
-  if (typeof window === "undefined") return "deepseek-chat";
-  return (localStorage.getItem(KEYS.model) as DeepSeekModel) ?? "deepseek-chat";
+  if (typeof window === "undefined") return "deepseek-v4-pro";
+  return (localStorage.getItem(KEYS.model) as DeepSeekModel) ?? "deepseek-v4-pro";
 }
 
 export function setModel(model: DeepSeekModel): void {
