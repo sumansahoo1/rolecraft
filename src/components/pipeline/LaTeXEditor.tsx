@@ -79,8 +79,15 @@ export default function LaTeXEditor({
       const w = window.open(url, "_blank");
       if (w) {
         w.onload = () => {
-          // Set empty title to minimize browser header text
-          try { w.document.title = ""; } catch { /* cross-origin */ }
+          // Build filename: {name}_{targetRole}_{DDMMYYYY}_Resume
+          const name = resumeSpec?.meta?.name ?? "";
+          const targetRole = resumeSpec?.meta?.targetRole ?? "";
+          const now = new Date();
+          const dd = String(now.getDate()).padStart(2, "0");
+          const mm = String(now.getMonth() + 1).padStart(2, "0");
+          const yyyy = now.getFullYear();
+          const parts = [name, targetRole, `${dd}${mm}${yyyy}`].filter(Boolean);
+          try { w.document.title = `${parts.join("_")}_Resume`; } catch { /* cross-origin */ }
           w.print();
         };
         // Clean up after print dialog closes (typical: 2 min max)

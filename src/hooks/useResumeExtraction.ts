@@ -97,7 +97,7 @@ export function useResumeExtraction() {
           },
         ],
         temperature: 0.1,
-        maxTokens: 4096,
+        maxTokens: 8192,
       });
 
       const jsonStr = res.content.replace(/```json\n?|```\n?/g, "").trim();
