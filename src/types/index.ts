@@ -212,6 +212,16 @@ export interface LatexVerificationResult {
 
 // ─── Pipeline State ────────────────────────────────────────
 
+export const TOKEN_BUDGETS: Record<PipelineStep, number> = {
+  "jd-analysis": 2048,
+  "experience-mapping": 2048,
+  "resume-generation": 8192,
+  "resume-critique": 6144,
+  "resume-spec": 8192,
+  "latex-generation": 0,
+  "latex-verification": 0,
+};
+
 export interface PipelineState {
   jd: string;
   masterResume: MasterResume;
@@ -232,7 +242,7 @@ export interface PipelineState {
   // LaTeX pipeline fields
   resumeSpec: ResumeSpec | null;
   latexSource: string | null;
-  latexPdfBlob: Blob | null;
+  latexHtmlBlob: Blob | null;
   latexVerification: LatexVerificationResult | null;
 }
 

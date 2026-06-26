@@ -20,6 +20,7 @@ import { usePipeline } from "@/hooks/usePipeline";
 import { getMasterResume, getApiKey } from "@/lib/storage";
 import type { MasterResume } from "@/types";
 import { copyToClipboard } from "@/lib/export";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const EXAMPLE_JD = `Senior Frontend Engineer
 
@@ -303,7 +304,9 @@ export default function BuilderPage() {
 
               <TabsContent value="analysis" className="mt-4">
                 {pipeline.analysis ? (
-                  <JDAnalysisPanel data={pipeline.analysis} />
+                  <ErrorBoundary>
+                    <JDAnalysisPanel data={pipeline.analysis} />
+                  </ErrorBoundary>
                 ) : pipeline.running &&
                   pipeline.currentStep === "jd-analysis" ? (
                   <LoadingCards />
@@ -316,7 +319,9 @@ export default function BuilderPage() {
 
               <TabsContent value="mapping" className="mt-4">
                 {pipeline.mapping ? (
-                  <ExperienceMappingPanel data={pipeline.mapping} />
+                  <ErrorBoundary>
+                    <ExperienceMappingPanel data={pipeline.mapping} />
+                  </ErrorBoundary>
                 ) : pipeline.running &&
                   pipeline.currentStep === "experience-mapping" ? (
                   <LoadingCards />
@@ -329,12 +334,14 @@ export default function BuilderPage() {
 
               <TabsContent value="resume" className="mt-4">
                 {pipeline.currentResume ? (
-                  <ResumeDisplay
-                    resume={pipeline.currentResume}
-                    iteration={pipeline.iteration}
-                    bestScore={pipeline.bestScore}
-                    totalIterations={pipeline.history.length}
-                  />
+                  <ErrorBoundary>
+                    <ResumeDisplay
+                      resume={pipeline.currentResume}
+                      iteration={pipeline.iteration}
+                      bestScore={pipeline.bestScore}
+                      totalIterations={pipeline.history.length}
+                    />
+                  </ErrorBoundary>
                 ) : pipeline.running &&
                   (pipeline.currentStep === "resume-generation" ||
                     pipeline.currentStep === "resume-critique") ? (
@@ -348,14 +355,16 @@ export default function BuilderPage() {
 
               <TabsContent value="critique" className="mt-4">
                 {pipeline.critique ? (
-                  <CritiquePanel
-                    data={pipeline.critique}
-                    iteration={pipeline.iteration}
-                    converged={!!isConverged}
-                    history={pipeline.history}
-                    bestScore={pipeline.bestScore}
-                    convergenceResult={pipeline.convergenceResult}
-                  />
+                  <ErrorBoundary>
+                    <CritiquePanel
+                      data={pipeline.critique}
+                      iteration={pipeline.iteration}
+                      converged={!!isConverged}
+                      history={pipeline.history}
+                      bestScore={pipeline.bestScore}
+                      convergenceResult={pipeline.convergenceResult}
+                    />
+                  </ErrorBoundary>
                 ) : pipeline.running &&
                   pipeline.currentStep === "resume-critique" ? (
                   <LoadingCards />
@@ -369,16 +378,18 @@ export default function BuilderPage() {
               {/* LaTeX Tab */}
               <TabsContent value="latex" className="mt-4">
                 {pipeline.latexSource ? (
-                  <ResumeDisplay
-                    resume={pipeline.currentResume || ""}
-                    iteration={pipeline.iteration}
-                    bestScore={pipeline.bestScore}
-                    totalIterations={pipeline.history.length}
-                    showLatex={true}
-                    latexSource={pipeline.latexSource}
-                    latexHtmlBlob={pipeline.latexPdfBlob}
-                    resumeSpec={pipeline.resumeSpec}
-                  />
+                  <ErrorBoundary>
+                    <ResumeDisplay
+                      resume={pipeline.currentResume || ""}
+                      iteration={pipeline.iteration}
+                      bestScore={pipeline.bestScore}
+                      totalIterations={pipeline.history.length}
+                      showLatex={true}
+                      latexSource={pipeline.latexSource}
+                      latexHtmlBlob={pipeline.latexHtmlBlob}
+                      resumeSpec={pipeline.resumeSpec}
+                    />
+                  </ErrorBoundary>
                 ) : latexPhase ? (
                   <LoadingResume />
                 ) : (
@@ -391,9 +402,11 @@ export default function BuilderPage() {
               {/* Verify Tab */}
               <TabsContent value="verify" className="mt-4">
                 {pipeline.latexVerification ? (
-                  <VerificationPanel
-                    verification={pipeline.latexVerification}
-                  />
+                  <ErrorBoundary>
+                    <VerificationPanel
+                      verification={pipeline.latexVerification}
+                    />
+                  </ErrorBoundary>
                 ) : latexPhase &&
                   pipeline.currentStep === "latex-verification" ? (
                   <LoadingCards />

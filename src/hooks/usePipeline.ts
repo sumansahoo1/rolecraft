@@ -25,6 +25,7 @@ import type {
   ResumeSpec,
   LatexVerificationResult,
 } from "@/types";
+import { TOKEN_BUDGETS } from "@/types";
 
 const MAX_CRITIQUE_ITERATIONS = 50;
 const TOP_SUGGESTIONS_COUNT = 5;
@@ -51,15 +52,22 @@ interface PipelineState {
   // LaTeX pipeline fields
   resumeSpec: ResumeSpec | null;
   latexSource: string | null;
-  latexPdfBlob: Blob | null;
+  latexHtmlBlob: Blob | null;
   latexVerification: LatexVerificationResult | null;
 }
 
 // ─── Helper functions ───────────────────────────────────────────
 
 function parseJsonResponse(raw: string): unknown {
-  const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
-  return JSON.parse(cleaned);
+  const cleaned = raw.replace(/```(?:json)?\s*\n?/gi, "").replace(/```\s*$/g, "").trim();
+  try { return JSON.parse(cleaned); } catch {}
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) {
+    try { return JSON.parse(match[0]); } catch {}
+  }
+  throw new Error(
+    `Failed to parse LLM response as JSON. Raw length: ${raw.length}. Last 200 chars: ...${raw.slice(-200)}`
+  );
 }
 
 /** Keyword-based fallback classifier for when the LLM doesn't provide categorized suggestions. */
@@ -461,7 +469,7 @@ export function usePipeline() {
     convergenceResult: null,
     resumeSpec: null,
     latexSource: null,
-    latexPdfBlob: null,
+    latexHtmlBlob: null,
     latexVerification: null,
   });
 
@@ -514,7 +522,7 @@ export function usePipeline() {
           { role: "user", content: context },
         ],
         temperature,
-        maxTokens: 4096,
+        maxTokens: TOKEN_BUDGETS[step],
       });
 
       return res.content;
@@ -540,7 +548,7 @@ export function usePipeline() {
         convergenceResult: null,
         resumeSpec: null,
         latexSource: null,
-        latexPdfBlob: null,
+        latexHtmlBlob: null,
         latexVerification: null,
       });
 
@@ -775,15 +783,15 @@ export function usePipeline() {
           latexSource,
         }));
 
-        let latexPdfBlob: Blob | null = null;
+        let latexHtmlBlob: Blob | null = null;
         let latexVerification: LatexVerificationResult | null = null;
 
-        // Compile ResumeSpec → PDF (local, instant — no CDN)
+        // Compile ResumeSpec → HTML preview (local, instant — no CDN)
         const engine = getLatexEngine();
         await engine.init();
         const compileResult = await engine.compile(resumeSpec);
-        if (compileResult.success && engine.pdfBlob) {
-          latexPdfBlob = engine.pdfBlob;
+        if (compileResult.success && engine.htmlPreviewBlob) {
+          latexHtmlBlob = engine.htmlPreviewBlob;
         }
 
         // ─── Auto-shrink to fit 1 page ───
@@ -878,7 +886,7 @@ export function usePipeline() {
         setState((s) => ({
           ...s,
           latexSource,
-          latexPdfBlob,
+          latexHtmlBlob,
           latexVerification,
         }));
 
@@ -889,7 +897,7 @@ export function usePipeline() {
           currentStep: null,
           currentResume: bestResume,
           latexSource,
-          latexPdfBlob,
+          latexHtmlBlob,
           latexVerification,
           resumeSpec,
           critique,
