@@ -1,0 +1,7 @@
+node_modules
+.next
+build
+coverage
+public/pdf.worker.min.mjs
+*.tsbuildinfo
+package-lock.json
