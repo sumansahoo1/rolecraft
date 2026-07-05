@@ -178,15 +178,66 @@ The Master Resume is the source of truth.
 - NEVER invent metrics unless evidence exists in the Master Resume. No revenue numbers, user counts, traffic numbers, latency numbers, or absolute business metrics in the output — derive relative metrics (percentages, ratios, multiples) from source data instead.
 
 # IMPACT GENERATION FRAMEWORK
-Every bullet must communicate: Problem → Action → Technical Implementation → Impact.
 
-Preferred structure: Action Verb + What Was Built + Technology Used + Measurable Outcome.
+Every bullet should communicate the XYZ structure:
 
-Bad: "Worked on frontend."
-Good: "Built reusable React components across multiple workflows, improving UI consistency and reducing duplicate implementation effort."
+  X (What was done) → Y (Why / purpose) → Z (What resulted)
 
-Bad: "Added APIs."
-Good: "Developed invoice generation APIs using Ruby on Rails, improving automation and reliability of recurring billing workflows."
+When XYZ does not fit naturally, lead with purpose: why the work mattered, not a tech inventory. When choosing between describing a task and describing an outcome, always prioritize the outcome.
+
+## TECHNICAL PRECISION RULES
+
+The resume reader cares about "what changed and why it matters" — not which tools were used. Technologies are ingredients; the dish is what matters.
+
+### STRIP — these patterns NEVER add value:
+
+- **Names of specific models, libraries, or providers** (DeepSeek, GPT-4, OpenAI, pymupdf, LangChain) — unless the JD explicitly requires that keyword from ATS analysis.
+- **Environment variables, config keys, file names** — anything in ALL_CAPS, dotted paths, or CLI flags is implementation trivia.
+- **Infrastructure specifications** — CPU cores, RAM sizes, disk quotas, network policies. The fact of isolation/sandboxing is enough; exact limits are noise.
+- **Framework internals** — "custom hooks", "custom middleware", "reducer composition". Describe the capability, not the React/infra concept used.
+- **\`via X\`, \`using Y\`, \`with Z\` clauses** where X/Y/Z is just a tool/library name. Kill the clause. If the HOW matters, describe the technique not the tool.
+
+### KEEP — these patterns earn their space:
+
+- **Architectural depth** — "multi-level rate limiting", "defense-in-depth validation", "event-driven pipeline". Shows strategic thinking, not just configuration.
+- **Scale or scope** — "across 6 product modules", "handling 10K+ concurrent sessions". Shows breadth and complexity.
+- **Non-obvious techniques** — "zero-downtime migration", "content-addressable caching", "optimistic concurrency control". Shows engineering sophistication.
+- **Strategic design choices** — "plugin-based architecture", "multi-provider abstraction layer", "feature-flag-driven rollout". Shows architectural decision-making.
+
+## INFERRED IMPACTS (Z in XYZ)
+
+You MAY infer these impacts (they follow naturally from the work described):
+- Legacy migration → reduced technical debt, improved maintainability
+- Refactoring → simplified architecture, improved development velocity
+- Validation → improved correctness, prevented invalid states
+- Testing → reduced regressions, improved release confidence
+- Reusable components → reduced duplication, improved consistency
+- State management → improved reliability, improved UX
+- API work → improved automation, improved reliability
+- Containerization → improved isolation, deployment consistency
+- Performance work → improved load times, better user experience
+
+You MUST NOT invent: revenue impact, user counts, traffic numbers, latency numbers. Percentages and relative metrics (ratios, multiples) computed from available source data are permitted — use them to replace absolute figures per the SENSITIVE METRICS PRIVACY rules below.
+
+## Examples
+
+Bad: "Designed 100% client-side architecture with multi-provider support (DeepSeek, OpenAI, Anthropic, Google Gemini) and state machine orchestration via custom React hooks."
+Good: "Designed client-side AI pipeline architecture with multi-provider support and state machine orchestration, eliminating server infrastructure and enabling fully browser-based resume generation."
+
+Bad: "Built Docker-based code execution sandbox with strict resource limits (0.5 CPU, 512MB RAM, no network, read-only filesystem) for secure Java code compilation and execution."
+Good: "Built containerized code execution sandbox with strict resource isolation for secure compilation and execution."
+
+Bad: "Implemented REST API backend with Firebase Auth token verification, rate limiting (100 req/min/IP global, 5 req/min on code execution), and MongoDB CRUD operations."
+Good: "Implemented REST API backend with authentication, multi-level rate limiting at both application and reverse-proxy layers, and database CRUD operations."
+
+Bad: "Implemented provider-switching architecture via environment variables (TRANSCRIBER_PROVIDER, WHISPER_MODEL, WHISPER_DEVICE) and comprehensive test suite with pytest."
+Good: "Implemented configurable provider-switching architecture supporting multiple backends, with comprehensive test coverage."
+
+Bad: "Worked on the API."
+Good: "Built REST API across multiple product surfaces, improving integration consistency and reducing client-side duplication."
+
+Bad: "Added automated tests."
+Good: "Introduced automated test suites covering critical user flows, reducing regression risk and improving release confidence."
 
 # QUANTIFICATION FRAMEWORK
 For EVERY bullet, attempt quantification in this order:
@@ -210,19 +261,7 @@ Example transformations:
 - "revenue increased from $2M to $5M" → "revenue increased 150%"
 - "reduced AWS costs from $80K/month to $45K/month" → "reduced infrastructure costs 44%"
 
-# IMPACT INFERENCE RULES
-You MAY infer these impacts (they follow naturally from the work described):
-- Legacy migration → reduced technical debt, improved maintainability
-- Refactoring → simplified architecture, improved readability, improved future development velocity
-- Validation → improved correctness, reduced invalid states
-- Testing → reduced regressions, improved release confidence
-- Reusable components → reduced duplication, improved consistency
-- State management → improved reliability, improved UX
-- API work → improved automation, improved reliability, improved correctness
-- Dockerization → improved isolation, improved deployment consistency
-- Performance work → improved load times, better user experience
 
-You MUST NOT invent: revenue impact, user counts, traffic numbers, latency numbers. Percentages and relative metrics (ratios, multiples) computed from available source data are permitted — use them to replace absolute figures per the SENSITIVE METRICS PRIVACY rules above.
 
 # ROLE TAILORING
 Tailor based on the target role:
@@ -267,7 +306,7 @@ Improve ONLY the sections and bullets that need fixing. Preserve everything else
 # PRIORITIZED ACTION PLAN
 You will receive a prioritized list of suggestions. Address them in this order:
 1. **Critical (fabrication)**: Remove or correct any fabricated content immediately. This is non-negotiable.
-2. **High (impact quality)**: Rewrite weak bullets to demonstrate Problem → Action → Technical Implementation → Impact. Add derived metrics where evidence supports them.
+2. **High (impact quality)**: Rewrite weak bullets using XYZ structure (What was done → Why → What resulted). Strip unnecessary technical noise: model names, env vars, infra specs, framework internals. Add derived metrics where evidence supports them.
 3. **Medium (ATS/content)**: Add missing keywords naturally where genuine experience supports them. Feature the recommended experiences and projects.
 4. **Low (clarity)**: Tighten language, remove filler words, improve readability.
 
@@ -289,11 +328,12 @@ export const RESUME_CRITIQUE_PROMPT = `You are a senior hiring manager reviewing
 Analyze for:
 1. ATS compatibility — keywords, formatting, structure. Does it pass automated screening?
 2. Relevance to target role — does every bullet earn its place?
-3. Impact quality — are bullet points outcome-driven (Problem → Action → Impact), or are they task descriptions?
+3. Impact quality — are bullet points outcome-driven (XYZ: What was done → Why → What resulted), or are they task descriptions? Flag bullets that bury unnecessary technical noise (model names, env vars, infra specs, framework internals) — these weaken impact.
 4. Quantification quality — are metrics present, honest, and well-placed? Are there missed opportunities for quantification?
-5. Clarity and conciseness — is every word pulling its weight?
-6. Career progression — is growth and increasing engineering maturity visible? Does recent work occupy more space than older work?
-7. Authenticity — does every bullet trace back to something in the candidate's actual experience? Flag anything that appears fabricated or embellished beyond what the source data supports. Note: percentages and relative metrics derived from absolute source data are valid computed metrics, NOT fabrication. Fabricated content MUST lower the score significantly.
+5. Technical precision — do bullets contain implementation trivia that should be stripped? Model names, env var values, CPU/RAM specs, framework internals ("custom hooks", "middleware chain")? Flag them under "impact" as noise.
+6. Clarity and conciseness — is every word pulling its weight?
+7. Career progression — is growth and increasing engineering maturity visible? Does recent work occupy more space than older work?
+8. Authenticity — does every bullet trace back to something in the candidate's actual experience? Flag anything that appears fabricated or embellished beyond what the source data supports. Note: percentages and relative metrics derived from absolute source data are valid computed metrics, NOT fabrication. Fabricated content MUST lower the score significantly.
 
 ## PREVIOUS ITERATION CONTEXT
 If previous critique results are provided in the user message:
@@ -306,7 +346,7 @@ If previous critique results are provided in the user message:
 ## CATEGORIZED SUGGESTIONS
 Classify each suggestion into one of these categories:
 - "fabrication": invented experience, technologies, metrics, or achievements not in the master resume
-- "impact": weak bullet points lacking outcomes, task descriptions instead of impact demonstrations
+- "impact": weak bullet points lacking outcomes, task descriptions instead of impact demonstrations, unnecessary technical noise (model names, env vars, infra specs, framework internals)
 - "ats": missing keywords, poor keyword placement, ATS-unfriendly formatting
 - "clarity": wordiness, redundancy, unclear language, poor conciseness
 - "content": wrong experiences featured, missing relevant skills, poor role tailoring
