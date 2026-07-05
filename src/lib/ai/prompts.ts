@@ -175,7 +175,7 @@ The Master Resume is the source of truth.
 - NEVER invent experience. Never add companies, roles, or projects that are not in the Master Resume.
 - NEVER invent technologies. Only list technologies explicitly present in the Master Resume.
 - NEVER invent achievements. Every bullet must trace back to a real highlight in the Master Resume.
-- NEVER invent metrics unless evidence exists in the Master Resume: no revenue numbers, user counts, traffic numbers, latency numbers, or percentages without source data.
+- NEVER invent metrics unless evidence exists in the Master Resume. No revenue numbers, user counts, traffic numbers, latency numbers, or absolute business metrics in the output — derive relative metrics (percentages, ratios, multiples) from source data instead.
 
 # IMPACT GENERATION FRAMEWORK
 Every bullet must communicate: Problem → Action → Technical Implementation → Impact.
@@ -199,6 +199,17 @@ Tier 3 — Engineering Impact: If metrics do not exist, use engineering outcomes
 
 Tier 4 — Product Impact: If technical metrics are unavailable, describe impact on users, maintainability, reliability, workflows, developer experience. Example: "Improved maintainability of legacy systems", "Reduced regression risk", "Simplified future development."
 
+# SENSITIVE METRICS PRIVACY
+Absolute monetary and business metrics from the Master Resume MUST be transformed into relative/percentage figures. Compute the relative metric from source data, but ONLY output the relative figure. Never output raw company financial numbers.
+
+This applies to: revenue, sales, costs, user counts, traffic, budgets, deal sizes, ARR, MRR, and any other absolute business metric.
+
+Example transformations:
+- "sales improved from 100K USD to 126.5K USD" → "sales improved 26.5%"
+- "grew user base from 50K to 200K" → "grew user base 4x"
+- "revenue increased from $2M to $5M" → "revenue increased 150%"
+- "reduced AWS costs from $80K/month to $45K/month" → "reduced infrastructure costs 44%"
+
 # IMPACT INFERENCE RULES
 You MAY infer these impacts (they follow naturally from the work described):
 - Legacy migration → reduced technical debt, improved maintainability
@@ -211,7 +222,7 @@ You MAY infer these impacts (they follow naturally from the work described):
 - Dockerization → improved isolation, improved deployment consistency
 - Performance work → improved load times, better user experience
 
-You MUST NOT invent: revenue impact, user counts, traffic numbers, latency numbers, percentages — unless evidence exists in the Master Resume.
+You MUST NOT invent: revenue impact, user counts, traffic numbers, latency numbers. Percentages and relative metrics (ratios, multiples) computed from available source data are permitted — use them to replace absolute figures per the SENSITIVE METRICS PRIVACY rules above.
 
 # ROLE TAILORING
 Tailor based on the target role:
@@ -251,6 +262,7 @@ Improve ONLY the sections and bullets that need fixing. Preserve everything else
 3. **Anti-regression**: If quantified metrics were praised in the critique, preserve them exactly. Do not remove or alter praised elements.
 4. **Source-of-truth**: The Master Resume remains the single source of truth. Never invent experience, technologies, metrics, or achievements.
 5. **Address fabrications first**: If any content was flagged as fabricated, remove or correct it immediately — this is the highest priority.
+6. **Sensitive metrics privacy**: Transform absolute business figures into relative metrics (percentages, ratios, multiples). Never reintroduce raw monetary values, user counts, or traffic numbers in revisions.
 
 # PRIORITIZED ACTION PLAN
 You will receive a prioritized list of suggestions. Address them in this order:
@@ -281,7 +293,7 @@ Analyze for:
 4. Quantification quality — are metrics present, honest, and well-placed? Are there missed opportunities for quantification?
 5. Clarity and conciseness — is every word pulling its weight?
 6. Career progression — is growth and increasing engineering maturity visible? Does recent work occupy more space than older work?
-7. Authenticity — does every bullet trace back to something in the candidate's actual experience? Flag anything that appears fabricated or embellished beyond what the source data supports. Fabricated content MUST lower the score significantly.
+7. Authenticity — does every bullet trace back to something in the candidate's actual experience? Flag anything that appears fabricated or embellished beyond what the source data supports. Note: percentages and relative metrics derived from absolute source data are valid computed metrics, NOT fabrication. Fabricated content MUST lower the score significantly.
 
 ## PREVIOUS ITERATION CONTEXT
 If previous critique results are provided in the user message:
