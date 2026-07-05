@@ -3,14 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CircleIcon } from 'lucide-react';
-import { getMasterResume } from '@/lib/storage';
+import { getExtractionJson } from '@/lib/storage';
 
 export default function AppPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const resume = getMasterResume();
-    if (resume) {
+    if (getExtractionJson()) {
       router.replace('/app/builder');
     } else {
       router.replace('/app/resume');

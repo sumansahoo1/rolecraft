@@ -65,7 +65,7 @@ export interface MasterResume {
   linkedin?: string;
   portfolio?: string;
   summary: string;
-  skills: string[];
+  skills: string[] | Record<string, string[]>;
   experience: Experience[];
   education: Education[];
   certifications?: string[];
@@ -238,7 +238,7 @@ export interface StoredData {
   apiKey?: string;
   provider?: Provider;
   model?: string;
-  masterResume?: MasterResume;
+  extractionJson?: Record<string, unknown>;
   preferences?: {
     tone?: 'professional' | 'casual' | 'technical';
     format?: 'bullet' | 'paragraph';

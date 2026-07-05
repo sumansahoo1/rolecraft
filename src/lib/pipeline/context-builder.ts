@@ -1,17 +1,11 @@
-import type {
-  JDAnalysis,
-  ExperienceMapping,
-  MasterResume,
-  ResumeCritique,
-  RevisionPlan,
-} from '@/types';
+import type { JDAnalysis, ExperienceMapping, ResumeCritique, RevisionPlan } from '@/types';
 
 /** Build the critique user message including full iteration history. */
 export function buildCritiqueContext(
   resume: string,
   analysis: JDAnalysis,
   jd: string,
-  masterResume: MasterResume,
+  masterResume: Record<string, unknown>,
   iteration: number,
   history: Array<{ iteration: number; resume: string; critique: ResumeCritique }>
 ): string {
@@ -39,7 +33,7 @@ export function buildRevisionContext(
   revisionPlan: RevisionPlan,
   analysis: JDAnalysis,
   mapping: ExperienceMapping | null,
-  masterResume: MasterResume
+  masterResume: Record<string, unknown>
 ): string {
   const parts = [
     `## CURRENT RESUME\n${resume}`,

@@ -17,8 +17,8 @@ import { ResumeDisplay } from '@/components/pipeline/ResumeDisplay';
 import { CritiquePanel } from '@/components/pipeline/CritiquePanel';
 import VerificationPanel from '@/components/pipeline/VerificationPanel';
 import { usePipeline } from '@/hooks/usePipeline';
-import { getMasterResume, getApiKey } from '@/lib/storage';
-import type { MasterResume } from '@/types';
+import { getApiKey, getExtractionJson } from '@/lib/storage';
+
 import { copyToClipboard } from '@/lib/export';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -40,22 +40,26 @@ export default function BuilderPage() {
   const [jd, setJd] = useState('');
   const [activeTab, setActiveTab] = useState('analysis');
   const [userPickedTab, setUserPickedTab] = useState(false);
-  const [masterResume, setMasterResume] = useState<MasterResume | null>(null);
   const [resumeLoaded, setResumeLoaded] = useState(false);
 
-  // Load master resume on the client only to avoid hydration mismatch
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMasterResume(getMasterResume());
-    setResumeLoaded(true);
-  }, []);
+    const extractionJson = getExtractionJson();
+    if (extractionJson) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setResumeLoaded(true);
+    } else {
+      toast.error('No master resume found. Add one first.');
+      router.push('/app/resume');
+    }
+  }, [router]);
 
   const handleRun = () => {
     if (!jd.trim()) {
       toast.error('Paste a job description first');
       return;
     }
-    if (!masterResume) {
+    const extractionJson = getExtractionJson();
+    if (!extractionJson) {
       toast.error('No master resume found. Add one first.');
       router.push('/app/resume');
       return;
@@ -69,7 +73,7 @@ export default function BuilderPage() {
 
     setActiveTab('analysis');
     setUserPickedTab(false);
-    pipeline.run(jd, masterResume);
+    pipeline.run(jd, extractionJson);
   };
 
   const pipelineDone = !pipeline.running && pipeline.currentResume != null;
@@ -101,7 +105,7 @@ export default function BuilderPage() {
       <div className="flex w-80 shrink-0 flex-col border-r p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Job Description</h2>
-          {masterResume && (
+          {resumeLoaded && (
             <Badge variant="secondary" className="text-xs">
               Resume loaded
             </Badge>
@@ -115,7 +119,7 @@ export default function BuilderPage() {
               <Skeleton className="h-4 w-48" />
             </CardContent>
           </Card>
-        ) : !masterResume ? (
+        ) : !getExtractionJson() ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-8">
               <AlertTriangle className="size-6 text-yellow-600" />

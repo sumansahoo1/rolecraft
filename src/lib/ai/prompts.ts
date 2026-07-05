@@ -13,7 +13,8 @@ export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extrac
   "linkedin": "string | null",
   "portfolio": "string | null",
   "summary": "string (professional summary, 2-3 sentences)",
-  "skills": ["string"],
+  "skills": { "Category Name": ["skill1", "skill2"] } | ["string"],
+  (If the resume groups skills into categories like "Frontend", "Backend", "Databases", "Languages" etc., preserve those categories as keys with arrays of skills. If skills are a flat ungrouped list, use a single key like "Technical". Never lose the grouping structure present in the source text.)
   "experience": [
     {
       "company": "string",
@@ -64,7 +65,7 @@ export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extrac
 
 Rules:
 - Infer missing fields as null, never fabricate data.
-- For skills, include both technical and soft skills mentioned — be exhaustive.
+- For skills, preserve ALL grouping categories exactly as they appear in the source text. If the resume has sections like "Frontend", "Backend", "Databases", "Languages" etc., use those as keys. If skills are listed without categories, use a single key like "Technical". Include both technical and soft skills — be exhaustive. Never flatten a categorized list into a single flat array.
 - For experience highlights, preserve all quantifiable achievements (numbers, percentages, scale).
 - For projects, capture EVERY project mentioned anywhere in the resume (personal projects, academic projects, hackathons, freelance work, side projects). Extract as much detail as possible: the project name, a description of what it does, the URL if provided, all technologies listed, the duration if mentioned, and bullet-point highlights of achievements.
 - For openSource, capture ALL open source contributions mentioned — repositories contributed to, maintained projects, significant pull requests, community involvement. Include the repo/project name, description of contributions, URLs, your role, and technologies.

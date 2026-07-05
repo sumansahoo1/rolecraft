@@ -6,7 +6,7 @@
  * directly from the browser to the AI provider.
  */
 
-import type { StoredData, MasterResume, Provider } from '@/types';
+import type { StoredData, Provider } from '@/types';
 
 const KEYS = {
   // Legacy generic key (backward compat)
@@ -19,7 +19,7 @@ const KEYS = {
   apiKey_google: 'rolecraft_api_key_google',
   apiKey_openrouter: 'rolecraft_api_key_openrouter',
   model: 'rolecraft_model',
-  masterResume: 'rolecraft_master_resume',
+  extractionJson: 'rolecraft_extraction_json',
   preferences: 'rolecraft_preferences',
 } as const;
 
@@ -104,25 +104,25 @@ export function setModel(model: string): void {
   localStorage.setItem(KEYS.model, model);
 }
 
-// ─── Master Resume ──────────────────────────────────────────
+// ─── Raw Extraction JSON ──────────────────────────────────
 
-export function getMasterResume(): MasterResume | null {
+export function getExtractionJson(): Record<string, unknown> | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(KEYS.masterResume);
+  const raw = localStorage.getItem(KEYS.extractionJson);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as MasterResume;
+    return JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return null;
   }
 }
 
-export function setMasterResume(resume: MasterResume): void {
-  localStorage.setItem(KEYS.masterResume, JSON.stringify(resume));
+export function setExtractionJson(json: Record<string, unknown>): void {
+  localStorage.setItem(KEYS.extractionJson, JSON.stringify(json));
 }
 
-export function clearMasterResume(): void {
-  localStorage.removeItem(KEYS.masterResume);
+export function clearExtractionJson(): void {
+  localStorage.removeItem(KEYS.extractionJson);
 }
 
 // ─── Preferences ────────────────────────────────────────────
@@ -149,7 +149,7 @@ export function getAllStoredData(): Partial<StoredData> {
     apiKey: getApiKey() ?? undefined,
     provider: getProvider(),
     model: getModel(),
-    masterResume: getMasterResume() ?? undefined,
+    extractionJson: getExtractionJson() ?? undefined,
     preferences: getPreferences() ?? undefined,
   };
 }

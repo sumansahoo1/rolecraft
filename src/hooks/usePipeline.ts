@@ -31,7 +31,6 @@ import {
   DEFAULT_STEP_TEMPERATURE,
 } from '@/lib/pipeline';
 import type {
-  MasterResume,
   JDAnalysis,
   ExperienceMapping,
   ResumeCritique,
@@ -144,8 +143,12 @@ export function usePipeline() {
   );
 
   const run = useCallback(
-    async (jd: string, masterResume: MasterResume) => {
+    async (jd: string, extractionJson: Record<string, unknown>) => {
       abortRef.current = false;
+
+      const resumeData = extractionJson;
+      const resumeDataStr = JSON.stringify(resumeData, null, 2);
+
       setState({
         running: true,
         currentStep: 'jd-analysis',
@@ -189,7 +192,7 @@ export function usePipeline() {
         // Step 2: Experience Mapping
         const mappingRaw = await runStep(
           'experience-mapping',
-          `Job Analysis:\n${JSON.stringify(analysis, null, 2)}\n\nCandidate Master Resume:\n${JSON.stringify(masterResume, null, 2)}`
+          `Job Analysis:\n${JSON.stringify(analysis, null, 2)}\n\nCandidate Master Resume:\n${resumeDataStr}`
         );
         if (abortRef.current) return;
         const mapping = extractJsonFromLLMResponse(mappingRaw) as ExperienceMapping;
@@ -202,7 +205,7 @@ export function usePipeline() {
         // Step 3: Initial Resume Generation
         const resumeRaw = await runStep(
           'resume-generation',
-          `TARGET ROLE: ${analysis.roleTitle}\n\nJOB ANALYSIS:\n${JSON.stringify(analysis, null, 2)}\n\nEXPERIENCE MAPPING (what to feature, what to downplay):\n${JSON.stringify(mapping, null, 2)}\n\nMASTER RESUME (source of truth — USE ONLY THIS DATA):\n${JSON.stringify(masterResume, null, 2)}`
+          `TARGET ROLE: ${analysis.roleTitle}\n\nJOB ANALYSIS:\n${JSON.stringify(analysis, null, 2)}\n\nEXPERIENCE MAPPING (what to feature, what to downplay):\n${JSON.stringify(mapping, null, 2)}\n\nMASTER RESUME (source of truth — USE ONLY THIS DATA):\n${resumeDataStr}`
         );
         if (abortRef.current) return;
         let resume = resumeRaw;
@@ -258,7 +261,7 @@ export function usePipeline() {
             resume,
             analysis,
             jd,
-            masterResume,
+            resumeData,
             iteration,
             localHistory
           );
@@ -313,7 +316,7 @@ export function usePipeline() {
               revisionPlan,
               analysis,
               mapping,
-              masterResume
+              resumeData
             );
             const regenRaw = await runStep(
               'resume-generation',
@@ -347,16 +350,14 @@ export function usePipeline() {
         try {
           resumeSpec = extractJsonFromLLMResponse(specRaw) as ResumeSpec;
 
-          // Merge MasterResume contact details into the spec.
-          // The text resume may not include structured contact fields,
-          // but the MasterResume always has them as the source of truth.
+          // Merge extraction JSON contact details into the spec.
           resumeSpec.meta = {
             ...resumeSpec.meta,
-            name: masterResume.name || resumeSpec.meta.name,
-            email: masterResume.email || resumeSpec.meta.email,
-            phone: masterResume.phone || resumeSpec.meta.phone || undefined,
-            linkedin: masterResume.linkedin || resumeSpec.meta.linkedin || undefined,
-            portfolio: masterResume.portfolio || resumeSpec.meta.portfolio || undefined,
+            name: (resumeData.name as string) || resumeSpec.meta.name,
+            email: (resumeData.email as string) || resumeSpec.meta.email,
+            phone: (resumeData.phone as string) || resumeSpec.meta.phone || undefined,
+            linkedin: (resumeData.linkedin as string) || resumeSpec.meta.linkedin || undefined,
+            portfolio: (resumeData.portfolio as string) || resumeSpec.meta.portfolio || undefined,
           };
         } catch {
           // If parsing fails, set error and skip LaTeX phase
