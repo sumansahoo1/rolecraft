@@ -101,7 +101,7 @@ export function useResumeExtraction() {
           },
         ],
         temperature: 0.1,
-        maxTokens: 8192,
+        maxTokens: 16384,
       });
 
       const raw = extractJsonFromLLMResponse(res.content) as Record<string, unknown>;
