@@ -188,7 +188,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 {skill}
                 <button
                   onClick={() => removeSkill(skill)}
-                  className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
                 >
                   <Trash2 className="size-3" />
                 </button>
@@ -257,7 +257,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       onClick={() => expHL.removeAt(i, j)}
                       className="shrink-0"
                     >
-                      <Trash2 className="text-muted-foreground size-3.5" />
+                      <Trash2 className="size-3.5 text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
@@ -269,7 +269,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 variant="ghost"
                 size="sm"
                 onClick={() => exp.removeItem(i)}
-                className="text-destructive mt-2"
+                className="mt-2 text-destructive"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -323,7 +323,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 variant="ghost"
                 size="sm"
                 onClick={() => edu.removeItem(i)}
-                className="text-destructive mt-2"
+                className="mt-2 text-destructive"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -364,7 +364,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
             </Button>
           </div>
           {proj.items.length === 0 && (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               No projects yet. Add personal projects, hackathons, freelance work, or side projects.
             </p>
           )}
@@ -422,7 +422,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       {tech}
                       <button
                         onClick={() => projTags.remove(i, tech)}
-                        className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
                       >
                         <Trash2 className="size-3" />
                       </button>
@@ -452,7 +452,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       onClick={() => projHL.removeAt(i, j)}
                       className="shrink-0"
                     >
-                      <Trash2 className="text-muted-foreground size-3.5" />
+                      <Trash2 className="size-3.5 text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
@@ -465,7 +465,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 variant="ghost"
                 size="sm"
                 onClick={() => proj.removeItem(i)}
-                className="text-destructive mt-2"
+                className="mt-2 text-destructive"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -484,7 +484,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
             </Button>
           </div>
           {oss.items.length === 0 && (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               No open source contributions yet. Add repositories you maintain, contribute to, or
               significant PRs.
             </p>
@@ -548,7 +548,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       {tech}
                       <button
                         onClick={() => ossTags.remove(i, tech)}
-                        className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
                       >
                         <Trash2 className="size-3" />
                       </button>
@@ -575,7 +575,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       onClick={() => ossHL.removeAt(i, j)}
                       className="shrink-0"
                     >
-                      <Trash2 className="text-muted-foreground size-3.5" />
+                      <Trash2 className="size-3.5 text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
@@ -588,7 +588,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 variant="ghost"
                 size="sm"
                 onClick={() => oss.removeItem(i)}
-                className="text-destructive mt-2"
+                className="mt-2 text-destructive"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>
@@ -607,7 +607,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
             </Button>
           </div>
           {other.items.length === 0 && (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               No other works yet. Add publications, speaking engagements, patents, awards,
               volunteering, or languages.
             </p>
@@ -686,7 +686,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 variant="ghost"
                 size="sm"
                 onClick={() => other.removeItem(i)}
-                className="text-destructive mt-2"
+                className="mt-2 text-destructive"
               >
                 <Trash2 className="mr-1 size-3.5" /> Remove
               </Button>

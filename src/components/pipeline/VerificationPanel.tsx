@@ -41,10 +41,10 @@ export default function VerificationPanel({
 }: VerificationPanelProps) {
   if (!verification) {
     return (
-      <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 py-12">
+      <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
         <Info className="size-8 opacity-30" />
         <p className="text-sm">No verification results yet</p>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           Verification runs automatically after LaTeX compilation
         </p>
       </div>
@@ -78,7 +78,7 @@ export default function VerificationPanel({
           >
             {passes ? 'All Checks Passed' : 'Issues Found'}
           </p>
-          <p className="text-muted-foreground mt-0.5 text-xs">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {pageCount !== null ? `${pageCount} page(s)` : 'Page count unknown'}
             {fixAttempts > 0 && ` · ${fixAttempts} fix attempt(s)`}
           </p>
@@ -88,7 +88,7 @@ export default function VerificationPanel({
           <button
             onClick={onRecompile}
             disabled={isCompiling}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 ml-auto inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm disabled:opacity-50"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             <RefreshCw className={`size-3.5 ${isCompiling ? 'animate-spin' : ''}`} />
             {isCompiling ? 'Fixing...' : 'Auto-Fix'}
@@ -98,8 +98,8 @@ export default function VerificationPanel({
 
       {/* Page Count Display */}
       {pageCount !== null && (
-        <div className="bg-muted/30 flex items-center gap-2 rounded-md px-4 py-2">
-          <Layout className="text-muted-foreground size-4" />
+        <div className="flex items-center gap-2 rounded-md bg-muted/30 px-4 py-2">
+          <Layout className="size-4 text-muted-foreground" />
           <span className="text-sm">
             Page Count: <strong>{pageCount}</strong>
             {pageCount > 1 && (
@@ -116,7 +116,7 @@ export default function VerificationPanel({
 
       {/* Per-Check Results */}
       <div className="space-y-2">
-        <h4 className="text-muted-foreground text-sm font-medium">Verification Checks</h4>
+        <h4 className="text-sm font-medium text-muted-foreground">Verification Checks</h4>
         {checks.map((check) => {
           const Icon = CHECK_ICONS[check.name] || Info;
           return (
@@ -135,10 +135,10 @@ export default function VerificationPanel({
               )}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Icon className="text-muted-foreground size-3.5" />
+                  <Icon className="size-3.5 text-muted-foreground" />
                   <span className="text-sm font-medium">{check.name}</span>
                 </div>
-                <p className="text-muted-foreground mt-0.5 text-xs">{check.detail}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{check.detail}</p>
               </div>
             </div>
           );
@@ -148,7 +148,7 @@ export default function VerificationPanel({
       {/* Issues List */}
       {issues.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-muted-foreground text-sm font-medium">
+          <h4 className="text-sm font-medium text-muted-foreground">
             Issues ({criticalIssues.length} errors, {warnings.length} warnings)
           </h4>
           <div className="space-y-1.5">

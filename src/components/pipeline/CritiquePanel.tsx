@@ -81,17 +81,17 @@ export function CritiquePanel({
         <CardContent className="flex flex-col gap-4 pt-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-muted-foreground text-xs font-medium">Overall Score</p>
+              <p className="text-xs font-medium text-muted-foreground">Overall Score</p>
               <div className="flex items-center gap-3">
                 <Progress value={data.score} className="w-32" />
                 <span className={`text-2xl font-bold tabular-nums ${scoreColor}`}>
                   {data.score}
                 </span>
-                <span className="text-muted-foreground text-sm">/100</span>
+                <span className="text-sm text-muted-foreground">/100</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-muted-foreground text-xs font-medium">ATS Score</p>
+              <p className="text-xs font-medium text-muted-foreground">ATS Score</p>
               <p className="text-lg font-semibold tabular-nums">{data.atsScore}/100</p>
             </div>
           </div>
@@ -124,7 +124,7 @@ export function CritiquePanel({
       {history.length >= 2 && (
         <Card>
           <CardContent className="flex flex-col gap-2 pt-4">
-            <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <TrendingUp className="size-3.5" />
               Score Trend
             </p>
@@ -139,7 +139,7 @@ export function CritiquePanel({
                       : 'text-red-600 dark:text-red-400';
                 return (
                   <div key={entry.iteration} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-muted-foreground text-xs">→</span>}
+                    {i > 0 && <span className="text-xs text-muted-foreground">→</span>}
                     <span
                       className={`text-sm font-semibold tabular-nums ${entryColor} ${isBest ? 'underline decoration-amber-500 decoration-2 underline-offset-2' : ''}`}
                       title={`Iteration ${entry.iteration}${isBest ? ' (Best)' : ''}`}
@@ -157,7 +157,7 @@ export function CritiquePanel({
       {/* Strengths */}
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
-          <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <ThumbsUp className="size-3.5 text-green-600" />
             Strengths
           </p>
@@ -172,7 +172,7 @@ export function CritiquePanel({
       {/* Weaknesses */}
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
-          <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <ThumbsDown className="size-3.5 text-red-600" />
             Weaknesses
           </p>
@@ -188,7 +188,7 @@ export function CritiquePanel({
                 {data.recurringWeaknesses.length > 1 ? 'multiple iterations' : 'previous iteration'}
                 )
               </p>
-              <ul className="text-muted-foreground mt-1 list-inside list-disc space-y-0.5 text-xs">
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
                 {data.recurringWeaknesses.map((w, i) => (
                   <li key={i}>{w}</li>
                 ))}
@@ -202,7 +202,7 @@ export function CritiquePanel({
       {!converged && data.suggestions.length > 0 && (
         <Card>
           <CardContent className="flex flex-col gap-3 pt-4">
-            <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Lightbulb className="size-3.5 text-yellow-600" />
               Suggestions for Next Iteration
             </p>
@@ -219,7 +219,7 @@ export function CritiquePanel({
       {history.length > 1 && (
         <Card>
           <CardContent className="flex flex-col gap-2 pt-4">
-            <p className="text-muted-foreground text-xs font-medium">Iteration History</p>
+            <p className="text-xs font-medium text-muted-foreground">Iteration History</p>
             <div className="flex flex-col gap-1">
               {history
                 .slice()
@@ -236,19 +236,19 @@ export function CritiquePanel({
                   return (
                     <div key={entry.iteration}>
                       <button
-                        className="hover:bg-muted/50 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm"
+                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted/50"
                         onClick={() => toggleExpanded(entry.iteration)}
                       >
                         {isExpanded ? (
-                          <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
+                          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
                         ) : (
-                          <ChevronRight className="text-muted-foreground size-3.5 shrink-0" />
+                          <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
                         )}
                         <span className="font-medium">Iteration {entry.iteration}</span>
                         <span className={`font-semibold tabular-nums ${entryColor}`}>
                           {entry.critique.score}/100
                         </span>
-                        <span className="text-muted-foreground text-xs">
+                        <span className="text-xs text-muted-foreground">
                           ATS: {entry.critique.atsScore}
                         </span>
                         {isBest && <Trophy className="ml-auto size-3.5 shrink-0 text-amber-500" />}
@@ -259,7 +259,7 @@ export function CritiquePanel({
                             <span className="font-medium text-green-600 dark:text-green-400">
                               Strengths:
                             </span>
-                            <ul className="text-muted-foreground ml-3 list-disc">
+                            <ul className="ml-3 list-disc text-muted-foreground">
                               {entry.critique.strengths.slice(0, 3).map((s, i) => (
                                 <li key={i}>{s}</li>
                               ))}
@@ -274,7 +274,7 @@ export function CritiquePanel({
                             <span className="font-medium text-red-600 dark:text-red-400">
                               Weaknesses:
                             </span>
-                            <ul className="text-muted-foreground ml-3 list-disc">
+                            <ul className="ml-3 list-disc text-muted-foreground">
                               {entry.critique.weaknesses.slice(0, 3).map((w, i) => (
                                 <li key={i}>{w}</li>
                               ))}

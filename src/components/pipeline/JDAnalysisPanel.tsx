@@ -16,15 +16,15 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
           <div>
-            <p className="text-muted-foreground text-xs font-medium">Role Title</p>
+            <p className="text-xs font-medium text-muted-foreground">Role Title</p>
             <p className="text-lg font-semibold">{data.roleTitle}</p>
           </div>
           <div>
-            <p className="text-muted-foreground text-xs font-medium">Experience Level</p>
+            <p className="text-xs font-medium text-muted-foreground">Experience Level</p>
             <Badge className="mt-0.5 capitalize">{data.experienceLevel}</Badge>
           </div>
           <div>
-            <p className="text-muted-foreground text-xs font-medium">Industry Context</p>
+            <p className="text-xs font-medium text-muted-foreground">Industry Context</p>
             <p className="text-sm">{data.industryContext}</p>
           </div>
         </CardContent>
@@ -33,7 +33,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
       <Card>
         <CardContent className="flex flex-col gap-4 pt-4">
           <div>
-            <p className="text-muted-foreground mb-2 text-xs font-medium">Required Skills</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Required Skills</p>
             <div className="flex flex-wrap gap-1.5">
               {data.requiredSkills.map((s, i) => (
                 <Badge key={`${s}-${i}`} variant="default">
@@ -44,7 +44,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
           </div>
           {data.niceToHaveSkills.length > 0 && (
             <div>
-              <p className="text-muted-foreground mb-2 text-xs font-medium">Nice to Have</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Nice to Have</p>
               <div className="flex flex-wrap gap-1.5">
                 {data.niceToHaveSkills.map((s, i) => (
                   <Badge key={`${s}-${i}`} variant="secondary">
@@ -63,7 +63,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
           <CardContent className="flex flex-col gap-3 pt-4">
             <div className="flex items-center gap-1.5">
               <Target className="size-3.5 text-blue-600" />
-              <p className="text-muted-foreground text-xs font-medium">Core Responsibilities</p>
+              <p className="text-xs font-medium text-muted-foreground">Core Responsibilities</p>
             </div>
             <ul className="list-inside list-disc space-y-1 text-sm">
               {data.coreResponsibilities.map((r, i) => (
@@ -80,7 +80,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
           <CardContent className="flex flex-col gap-3 pt-4">
             <div className="flex items-center gap-1.5">
               <Eye className="size-3.5 text-purple-600" />
-              <p className="text-muted-foreground text-xs font-medium">Hidden Requirements</p>
+              <p className="text-xs font-medium text-muted-foreground">Hidden Requirements</p>
             </div>
             <ul className="list-inside list-disc space-y-1 text-sm">
               {data.hiddenRequirements.map((r, i) => (
@@ -97,7 +97,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
           <CardContent className="flex flex-col gap-3 pt-4">
             <div className="flex items-center gap-1.5">
               <ScanSearch className="size-3.5 text-green-600" />
-              <p className="text-muted-foreground text-xs font-medium">ATS Keywords</p>
+              <p className="text-xs font-medium text-muted-foreground">ATS Keywords</p>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {data.atsKeywords.map((k, i) => (
@@ -115,7 +115,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
       <Card>
         <CardContent className="flex flex-col gap-3 pt-4">
           <div>
-            <p className="text-muted-foreground mb-2 text-xs font-medium">Key Responsibilities</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Key Responsibilities</p>
             <ul className="list-inside list-disc space-y-1 text-sm">
               {data.keyResponsibilities.map((r, i) => (
                 <li key={i}>{r}</li>
@@ -123,7 +123,7 @@ export function JDAnalysisPanel({ data }: JDAnalysisPanelProps) {
             </ul>
           </div>
           <div>
-            <p className="text-muted-foreground mb-2 text-xs font-medium">Keywords</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Keywords</p>
             <div className="flex flex-wrap gap-1.5">
               {data.keywords.map((k, i) => (
                 <Badge key={`${k}-${i}`} variant="outline">

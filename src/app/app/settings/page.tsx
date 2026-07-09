@@ -126,7 +126,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-2">
             <Label htmlFor="api-key">
               API Key
-              <span className="text-muted-foreground ml-1 text-xs">({providerLabel})</span>
+              <span className="ml-1 text-xs text-muted-foreground">({providerLabel})</span>
             </Label>
             <div className="relative">
               <Input
@@ -141,13 +141,13 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowKey(!showKey)}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label={showKey ? 'Hide key' : 'Show key'}
               >
                 {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               Your key is stored locally in your browser. Nothing leaves your machine except direct
               API calls to the provider.
             </p>
@@ -168,7 +168,7 @@ export default function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {models.find((o) => o.value === model)?.desc ??
                 'Select a model to see its description'}
             </p>

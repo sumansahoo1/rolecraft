@@ -109,17 +109,17 @@ export default function LaTeXEditor({
   };
 
   return (
-    <div className="bg-background flex h-full flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-background">
       {/* Toolbar */}
-      <div className="bg-muted/30 flex shrink-0 items-center justify-between border-b px-4 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b bg-muted/30 px-4 py-2">
         <div className="flex items-center gap-2">
-          <FileCode className="text-muted-foreground size-4" />
+          <FileCode className="size-4 text-muted-foreground" />
           <span className="text-sm font-medium">Resume Preview</span>
         </div>
 
         <div className="flex items-center gap-2">
           {/* View mode toggles */}
-          <div className="bg-background mr-2 flex items-center rounded border">
+          <div className="mr-2 flex items-center rounded border bg-background">
             <button
               onClick={() => setViewMode('split')}
               className={`p-1.5 ${
@@ -161,7 +161,7 @@ export default function LaTeXEditor({
           <button
             onClick={handlePrintPdf}
             disabled={!htmlBlob}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             title="Save as PDF — uncheck 'Headers and footers', set Margins to 'None'"
           >
             <Printer className="size-3.5" />
@@ -171,7 +171,7 @@ export default function LaTeXEditor({
           {/* Download .tex */}
           <button
             onClick={handleDownloadTex}
-            className="hover:bg-accent inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm"
+            className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
           >
             <Download className="size-3.5" />
             .tex
@@ -184,11 +184,11 @@ export default function LaTeXEditor({
         {/* Source panel */}
         {(viewMode === 'split' || viewMode === 'source') && (
           <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} flex flex-col border-r`}>
-            <div className="bg-muted/20 text-muted-foreground flex shrink-0 items-center justify-between border-b px-3 py-1.5 text-xs">
+            <div className="flex shrink-0 items-center justify-between border-b bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
               <span>LaTeX Source</span>
               <button
                 onClick={handleCopySource}
-                className="hover:text-foreground inline-flex items-center gap-1 text-xs"
+                className="inline-flex items-center gap-1 text-xs hover:text-foreground"
               >
                 {copied ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
                 {copied ? 'Copied' : 'Copy'}
@@ -197,7 +197,7 @@ export default function LaTeXEditor({
             <textarea
               value={source}
               onChange={handleSourceChange}
-              className="bg-background text-foreground w-full flex-1 resize-none border-0 p-4 font-mono text-sm focus:outline-none"
+              className="w-full flex-1 resize-none border-0 bg-background p-4 font-mono text-sm text-foreground focus:outline-none"
               placeholder="% LaTeX source will appear here..."
               spellCheck={false}
             />
@@ -207,7 +207,7 @@ export default function LaTeXEditor({
         {/* Preview panel */}
         {(viewMode === 'split' || viewMode === 'preview') && (
           <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} flex flex-col bg-white`}>
-            <div className="bg-muted/20 text-muted-foreground shrink-0 border-b px-3 py-1.5 text-xs">
+            <div className="shrink-0 border-b bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
               Resume Preview
             </div>
             <div className="min-h-0 flex-1 overflow-auto">

@@ -18,7 +18,7 @@ export default function AppPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center">
-      <CircleIcon className="text-muted-foreground/40 size-6 animate-pulse" />
+      <CircleIcon className="size-6 animate-pulse text-muted-foreground/40" />
     </div>
   );
 }

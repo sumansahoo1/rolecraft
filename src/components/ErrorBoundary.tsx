@@ -24,9 +24,9 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
-          <div className="border-destructive/50 bg-destructive/10 rounded-lg border p-6 text-center">
-            <p className="text-destructive font-semibold">Something went wrong</p>
-            <p className="text-muted-foreground mt-1 text-sm">{this.state.error?.message}</p>
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-center">
+            <p className="font-semibold text-destructive">Something went wrong</p>
+            <p className="mt-1 text-sm text-muted-foreground">{this.state.error?.message}</p>
             <Button
               className="mt-3"
               onClick={() => this.setState({ hasError: false, error: null })}
