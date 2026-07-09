@@ -4,19 +4,22 @@ import { useRef } from 'react';
 import { Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import type { MasterResume } from '@/types';
+import { getExtractionJson, setExtractionJson } from '@/lib/storage';
 
 interface JsonImportExportProps {
-  resume: MasterResume | null;
-  onImport: (resume: MasterResume) => void;
+  onImport: () => void;
 }
 
-export function JsonImportExport({ resume, onImport }: JsonImportExportProps) {
+export function JsonImportExport({ onImport }: JsonImportExportProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
-    if (!resume) return;
-    const blob = new Blob([JSON.stringify(resume, null, 2)], {
+    const data = getExtractionJson();
+    if (!data) {
+      toast.error('No extraction data to export');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -35,8 +38,9 @@ export function JsonImportExport({ resume, onImport }: JsonImportExportProps) {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const parsed = JSON.parse(reader.result as string) as MasterResume;
-        onImport(parsed);
+        const parsed = JSON.parse(reader.result as string) as Record<string, unknown>;
+        setExtractionJson(parsed);
+        onImport();
         toast.success('Resume imported successfully');
       } catch {
         toast.error('Invalid JSON file');
@@ -47,7 +51,7 @@ export function JsonImportExport({ resume, onImport }: JsonImportExportProps) {
 
   return (
     <div className="flex gap-2">
-      <Button variant="outline" size="sm" onClick={handleExport} disabled={!resume}>
+      <Button variant="outline" size="sm" onClick={handleExport}>
         <Download className="mr-1.5 size-3.5" />
         Export JSON
       </Button>

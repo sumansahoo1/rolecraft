@@ -77,13 +77,17 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
   const addSkill = () => {
     const skill = skillInput.trim();
-    if (skill && !resume.skills.includes(skill)) {
-      update('skills', [...resume.skills, skill]);
+    const skillsList = Array.isArray(resume.skills)
+      ? resume.skills
+      : Object.values(resume.skills).flat();
+    if (skill && !skillsList.includes(skill)) {
+      update('skills', [...skillsList, skill]);
       setSkillInput('');
     }
   };
 
   const removeSkill = (skill: string) => {
+    if (!Array.isArray(resume.skills)) return;
     update(
       'skills',
       resume.skills.filter((s) => s !== skill)
@@ -151,6 +155,20 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
               onChange={(e) => update('linkedin', e.target.value || null)}
             />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>GitHub</Label>
+            <Input
+              value={resume.github ?? ''}
+              onChange={(e) => update('github', e.target.value || null)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Twitter / X</Label>
+            <Input
+              value={resume.twitter ?? ''}
+              onChange={(e) => update('twitter', e.target.value || null)}
+            />
+          </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Portfolio</Label>
             <Input
@@ -174,7 +192,12 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
         <CardContent className="flex flex-col gap-3 pt-4">
           <Label>Skills</Label>
           <div className="flex flex-wrap gap-2">
-            {resume.skills.map((skill, i) => (
+            {(Array.isArray(resume.skills)
+              ? resume.skills
+              : Object.entries(resume.skills).flatMap(([cat, items]) =>
+                  items.map((item) => `${cat}: ${item}`)
+                )
+            ).map((skill, i) => (
               <Badge key={`${skill}-${i}`} variant="secondary" className="gap-1 pr-1">
                 {skill}
                 <button

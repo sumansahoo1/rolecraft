@@ -31,9 +31,10 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
       } else {
         extracted = await file.text();
       }
-      setText(extracted.slice(0, 20000));
-    } catch {
-      setFileName('Failed to read file');
+      setText(extracted);
+    } catch (err) {
+      console.error('Failed to read PDF/DOCX file:', err);
+      setFileName(`Failed to read file: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setFileLoading(false);
     }
@@ -76,9 +77,7 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
             )}
             <div>
               <p className="text-sm font-medium">{fileName ?? 'Click to upload'}</p>
-              <p className="text-muted-foreground text-xs">
-                PDF, DOCX, or TXT (max ~20KB extracted)
-              </p>
+              <p className="text-muted-foreground text-xs">PDF, DOCX, or TXT</p>
             </div>
             <input
               ref={fileInputRef}

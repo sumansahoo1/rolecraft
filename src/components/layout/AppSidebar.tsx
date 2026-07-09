@@ -28,9 +28,9 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="bg-background fixed inset-y-0 left-0 z-30 flex w-14 flex-col border-r">
+    <aside className="fixed inset-y-0 left-0 z-30 flex w-14 flex-col border-r bg-background">
       <Link href="/" className="flex h-14 items-center justify-center border-b">
-        <CircleIcon className="text-primary size-5" />
+        <CircleIcon className="size-5 text-primary" />
       </Link>
 
       <nav className="flex flex-1 flex-col items-center gap-1 px-2 py-3">

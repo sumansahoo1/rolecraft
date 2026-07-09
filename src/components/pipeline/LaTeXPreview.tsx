@@ -30,7 +30,7 @@ export default function LaTeXPreview({
   // Loading state
   if (isCompiling) {
     return (
-      <div className="text-muted-foreground flex h-full min-h-[400px] flex-col items-center justify-center gap-3">
+      <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-8 animate-spin" />
         <p className="text-sm">Rendering resume...</p>
       </div>
@@ -52,10 +52,10 @@ export default function LaTeXPreview({
   // Empty state
   if (!htmlBlob) {
     return (
-      <div className="text-muted-foreground flex h-full min-h-[400px] flex-col items-center justify-center gap-3">
+      <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-3 text-muted-foreground">
         <FileX className="size-12 opacity-30" />
         <p className="text-sm">No preview available</p>
-        <p className="text-muted-foreground text-xs">Generate a resume to see the preview</p>
+        <p className="text-xs text-muted-foreground">Generate a resume to see the preview</p>
       </div>
     );
   }

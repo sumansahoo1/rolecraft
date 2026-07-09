@@ -17,8 +17,8 @@ import { ResumeDisplay } from '@/components/pipeline/ResumeDisplay';
 import { CritiquePanel } from '@/components/pipeline/CritiquePanel';
 import VerificationPanel from '@/components/pipeline/VerificationPanel';
 import { usePipeline } from '@/hooks/usePipeline';
-import { getMasterResume, getApiKey } from '@/lib/storage';
-import type { MasterResume } from '@/types';
+import { getApiKey, getExtractionJson } from '@/lib/storage';
+
 import { copyToClipboard } from '@/lib/export';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -40,22 +40,26 @@ export default function BuilderPage() {
   const [jd, setJd] = useState('');
   const [activeTab, setActiveTab] = useState('analysis');
   const [userPickedTab, setUserPickedTab] = useState(false);
-  const [masterResume, setMasterResume] = useState<MasterResume | null>(null);
   const [resumeLoaded, setResumeLoaded] = useState(false);
 
-  // Load master resume on the client only to avoid hydration mismatch
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMasterResume(getMasterResume());
-    setResumeLoaded(true);
-  }, []);
+    const extractionJson = getExtractionJson();
+    if (extractionJson) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setResumeLoaded(true);
+    } else {
+      toast.error('No master resume found. Add one first.');
+      router.push('/app/resume');
+    }
+  }, [router]);
 
   const handleRun = () => {
     if (!jd.trim()) {
       toast.error('Paste a job description first');
       return;
     }
-    if (!masterResume) {
+    const extractionJson = getExtractionJson();
+    if (!extractionJson) {
       toast.error('No master resume found. Add one first.');
       router.push('/app/resume');
       return;
@@ -69,7 +73,7 @@ export default function BuilderPage() {
 
     setActiveTab('analysis');
     setUserPickedTab(false);
-    pipeline.run(jd, masterResume);
+    pipeline.run(jd, extractionJson);
   };
 
   const pipelineDone = !pipeline.running && pipeline.currentResume != null;
@@ -101,7 +105,7 @@ export default function BuilderPage() {
       <div className="flex w-80 shrink-0 flex-col border-r p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Job Description</h2>
-          {masterResume && (
+          {resumeLoaded && (
             <Badge variant="secondary" className="text-xs">
               Resume loaded
             </Badge>
@@ -115,11 +119,11 @@ export default function BuilderPage() {
               <Skeleton className="h-4 w-48" />
             </CardContent>
           </Card>
-        ) : !masterResume ? (
+        ) : !getExtractionJson() ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-8">
               <AlertTriangle className="size-6 text-yellow-600" />
-              <p className="text-muted-foreground text-center text-sm">
+              <p className="text-center text-sm text-muted-foreground">
                 No master resume found. Add your resume first to start building.
               </p>
               <Button variant="outline" size="sm" onClick={() => router.push('/app/resume')}>
@@ -177,7 +181,7 @@ export default function BuilderPage() {
         </div>
 
         {pipeline.error && (
-          <div className="border-destructive/50 bg-destructive/10 text-destructive mx-6 mt-4 rounded-lg border p-4 text-sm">
+          <div className="mx-6 mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
             {pipeline.error}
           </div>
         )}
@@ -185,8 +189,8 @@ export default function BuilderPage() {
         {!pipeline.analysis && !pipeline.running && !pipeline.error && (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
-              <FileText className="text-muted-foreground/40 mx-auto size-10" />
-              <p className="text-muted-foreground mt-3 text-sm">
+              <FileText className="mx-auto size-10 text-muted-foreground/40" />
+              <p className="mt-3 text-sm text-muted-foreground">
                 Paste a job description and click Generate Resume
               </p>
             </div>
@@ -203,7 +207,7 @@ export default function BuilderPage() {
                     : `Resume Ready (${pipeline.iteration} iterations)`}
                   {latexAvailable && ' • LaTeX Generated'}
                 </p>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   {isConverged
                     ? `Score: ${pipeline.critique?.score}/100 — ATS Score: ${pipeline.critique?.atsScore}/100`
                     : `Max iterations reached. Best score: ${pipeline.bestScore}/100.`}
@@ -291,7 +295,7 @@ export default function BuilderPage() {
                 ) : pipeline.running && pipeline.currentStep === 'jd-analysis' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     Waiting for JD analysis...
                   </p>
                 )}
@@ -305,7 +309,7 @@ export default function BuilderPage() {
                 ) : pipeline.running && pipeline.currentStep === 'experience-mapping' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     Waiting for experience mapping...
                   </p>
                 )}
@@ -328,7 +332,7 @@ export default function BuilderPage() {
                     pipeline.currentStep === 'resume-critique') ? (
                   <LoadingResume />
                 ) : (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     Waiting for resume generation...
                   </p>
                 )}
@@ -349,7 +353,7 @@ export default function BuilderPage() {
                 ) : pipeline.running && pipeline.currentStep === 'resume-critique' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     Waiting for critique...
                   </p>
                 )}
@@ -375,7 +379,7 @@ export default function BuilderPage() {
                 ) : latexPhase ? (
                   <LoadingResume />
                 ) : (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     LaTeX will be generated after the critique phase...
                   </p>
                 )}
@@ -390,7 +394,7 @@ export default function BuilderPage() {
                 ) : latexPhase && pipeline.currentStep === 'latex-verification' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
+                  <p className="py-8 text-center text-sm text-muted-foreground">
                     Verification runs after LaTeX compilation...
                   </p>
                 )}

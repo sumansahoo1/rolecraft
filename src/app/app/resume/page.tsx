@@ -7,27 +7,32 @@ import { ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ResumeInput } from '@/components/resume/ResumeInput';
-import { ResumeEditor } from '@/components/resume/ResumeEditor';
 import { JsonImportExport } from '@/components/resume/JsonImportExport';
+import { RawJsonViewer } from '@/components/resume/RawJsonViewer';
 import { useResumeExtraction } from '@/hooks/useResumeExtraction';
-import { getMasterResume, setMasterResume, getApiKey } from '@/lib/storage';
-import type { MasterResume } from '@/types';
+import { getApiKey, getExtractionJson, clearExtractionJson } from '@/lib/storage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function ResumePage() {
   const router = useRouter();
-  const { loading, error, result, extract, reset } = useResumeExtraction();
-  const [saved, setSaved] = useState<MasterResume | null>(null);
-  const [rawText, setRawText] = useState<string | null>(null);
+  const {
+    loading,
+    error,
+    result,
+    extract,
+    reset,
+    rawJson: extractedRawJson,
+  } = useResumeExtraction();
+  const [savedRawJson, setSavedRawJson] = useState<Record<string, unknown> | null>(null);
 
-  // Load saved resume on client only to avoid hydration mismatch
+  const rawJson = extractedRawJson ?? savedRawJson;
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSaved(getMasterResume());
+    setSavedRawJson(getExtractionJson());
   }, []);
 
   const handleExtract = async (text: string) => {
-    setRawText(text);
     const apiKey = getApiKey();
     if (!apiKey) {
       toast.error('Set your DeepSeek API key in Settings first');
@@ -38,27 +43,16 @@ export default function ResumePage() {
   };
 
   const handleReExtract = () => {
-    if (rawText) {
-      handleExtract(rawText);
-    } else {
-      reset();
-      setSaved(null);
-    }
+    clearExtractionJson();
+    reset();
+    setSavedRawJson(null);
   };
 
-  const handleSave = (resume: MasterResume) => {
-    setMasterResume(resume);
-    setSaved(resume);
-    toast.success('Master resume saved');
+  const handleImport = () => {
+    setSavedRawJson(getExtractionJson());
   };
 
-  const handleImport = (resume: MasterResume) => {
-    setMasterResume(resume);
-    setSaved(resume);
-    setRawText(null);
-  };
-
-  const displayResume = result ?? saved;
+  const hasResume = result ?? savedRawJson;
 
   return (
     <ErrorBoundary>
@@ -68,12 +62,12 @@ export default function ResumePage() {
             <div>
               <h1 className="text-xl font-semibold">Master Resume</h1>
               <p className="text-muted-foreground text-sm" suppressHydrationWarning>
-                {saved
-                  ? 'Extracted and saved. You can edit anytime.'
+                {savedRawJson
+                  ? 'Extracted and saved.'
                   : 'Paste or upload your resume to extract structured data.'}
               </p>
             </div>
-            <JsonImportExport resume={saved} onImport={handleImport} />
+            <JsonImportExport onImport={handleImport} />
           </div>
 
           {error && (
@@ -85,7 +79,7 @@ export default function ResumePage() {
             </div>
           )}
 
-          {!displayResume ? (
+          {!hasResume ? (
             <Card>
               <CardContent className="pt-6">
                 <ResumeInput onExtract={handleExtract} loading={loading} />
@@ -93,13 +87,20 @@ export default function ResumePage() {
             </Card>
           ) : (
             <>
-              <ResumeEditor
-                initial={displayResume}
-                onSave={handleSave}
-                onReExtract={handleReExtract}
-              />
+              <div className="mb-4 flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={handleReExtract}>
+                  Re-extract
+                </Button>
+                {loading && <span className="text-muted-foreground text-sm">Extracting...</span>}
+              </div>
 
-              {saved && (
+              {rawJson && (
+                <div className="rounded-xl border">
+                  <RawJsonViewer data={rawJson} />
+                </div>
+              )}
+
+              {savedRawJson && (
                 <div className="mt-6 flex justify-end">
                   <Button onClick={() => router.push('/app/builder')}>
                     Continue to Builder

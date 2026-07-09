@@ -3,14 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CircleIcon } from 'lucide-react';
-import { getMasterResume } from '@/lib/storage';
+import { getExtractionJson } from '@/lib/storage';
 
 export default function AppPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const resume = getMasterResume();
-    if (resume) {
+    if (getExtractionJson()) {
       router.replace('/app/builder');
     } else {
       router.replace('/app/resume');
@@ -19,7 +18,7 @@ export default function AppPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center">
-      <CircleIcon className="text-muted-foreground/40 size-6 animate-pulse" />
+      <CircleIcon className="size-6 animate-pulse text-muted-foreground/40" />
     </div>
   );
 }

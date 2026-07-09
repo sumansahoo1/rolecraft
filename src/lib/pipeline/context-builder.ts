@@ -1,17 +1,11 @@
-import type {
-  JDAnalysis,
-  ExperienceMapping,
-  MasterResume,
-  ResumeCritique,
-  RevisionPlan,
-} from '@/types';
+import type { JDAnalysis, ExperienceMapping, ResumeCritique, RevisionPlan } from '@/types';
 
 /** Build the critique user message including full iteration history. */
 export function buildCritiqueContext(
   resume: string,
   analysis: JDAnalysis,
   jd: string,
-  masterResume: MasterResume,
+  masterResume: Record<string, unknown>,
   iteration: number,
   history: Array<{ iteration: number; resume: string; critique: ResumeCritique }>
 ): string {
@@ -39,7 +33,7 @@ export function buildRevisionContext(
   revisionPlan: RevisionPlan,
   analysis: JDAnalysis,
   mapping: ExperienceMapping | null,
-  masterResume: MasterResume
+  masterResume: Record<string, unknown>
 ): string {
   const parts = [
     `## CURRENT RESUME\n${resume}`,
@@ -50,7 +44,7 @@ export function buildRevisionContext(
 
   if (mapping) {
     parts.push(
-      `## EXPERIENCE MAPPING\n- Matched Skills: ${mapping.matchedSkills.join(', ')}\n- Missing Skills: ${mapping.missingSkills.join(', ')}\n- Feature These Experiences: ${mapping.recommendedExperience.join(', ')}\n- Feature These Projects: ${mapping.recommendedProjects.join(', ')}\n- Downplay: ${mapping.sectionsToDownplay.join(', ')}`
+      `## EXPERIENCE MAPPING\n- Matched Skills: ${mapping.matchedSkills.join(', ')}\n- Missing Skills: ${mapping.missingSkills.join(', ')}\n- Feature These Experiences: ${mapping.recommendedExperience.join(', ')}\n- Feature These Projects: ${mapping.recommendedProjects.join(', ')}\n- Feature These Open Source: ${mapping.recommendedOpenSource.join(', ')}\n- Downplay: ${mapping.sectionsToDownplay.join(', ')}`
     );
   }
 

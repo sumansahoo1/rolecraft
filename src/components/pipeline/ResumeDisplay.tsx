@@ -107,7 +107,7 @@ export function ResumeDisplay({
       {/* Top toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             {iteration > 0 ? `Iteration ${iteration}` : 'Generated Resume'}
           </p>
           {bestScore !== undefined && totalIterations && totalIterations > 1 && (
@@ -117,7 +117,7 @@ export function ResumeDisplay({
             </Badge>
           )}
           {bestScore !== undefined && totalIterations && totalIterations > 1 && iteration > 0 && (
-            <span className="text-muted-foreground text-xs">
+            <span className="text-xs text-muted-foreground">
               Iteration {iteration} of {totalIterations}
             </span>
           )}
@@ -139,23 +139,23 @@ export function ResumeDisplay({
               <ChevronDown className="ml-1 size-3 opacity-50" />
             </Button>
             {dropdownOpen && (
-              <div className="bg-popover absolute top-full right-0 z-50 mt-1 w-36 rounded-md border p-1 shadow-md">
+              <div className="absolute top-full right-0 z-50 mt-1 w-36 rounded-md border bg-popover p-1 shadow-md">
                 <button
-                  className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs disabled:opacity-50"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
                   onClick={() => handleExport('txt')}
                   disabled={exporting !== null}
                 >
                   {exporting === 'txt' ? 'Saving...' : 'Download .txt'}
                 </button>
                 <button
-                  className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs disabled:opacity-50"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
                   onClick={() => handleExport('docx')}
                   disabled={exporting !== null}
                 >
                   {exporting === 'docx' ? 'Saving...' : 'Download .docx'}
                 </button>
                 <button
-                  className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs disabled:opacity-50"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
                   onClick={() => handleExport('pdf')}
                   disabled={exporting !== null}
                 >
@@ -168,7 +168,7 @@ export function ResumeDisplay({
       </div>
 
       {/* Resume content with styled sections */}
-      <div className="dark:bg-card max-h-[500px] overflow-auto rounded-lg border bg-white p-6">
+      <div className="max-h-[500px] overflow-auto rounded-lg border bg-white p-6 dark:bg-card">
         <div className="mx-auto max-w-[700px]">
           {sections.map((section, sIdx) => (
             <div key={sIdx} className="mb-4 last:mb-0">

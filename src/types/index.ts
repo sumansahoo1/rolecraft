@@ -63,9 +63,11 @@ export interface MasterResume {
   email: string;
   phone?: string;
   linkedin?: string;
+  github?: string;
+  twitter?: string;
   portfolio?: string;
   summary: string;
-  skills: string[];
+  skills: string[] | Record<string, string[]>;
   experience: Experience[];
   education: Education[];
   certifications?: string[];
@@ -108,6 +110,7 @@ export interface ExperienceMapping {
   notes: string[];
   recommendedExperience: string[];
   recommendedProjects: string[];
+  recommendedOpenSource: string[];
   sectionsToDownplay: string[];
 }
 
@@ -165,6 +168,7 @@ export interface ResumeSpec {
     location?: string;
     linkedin?: string;
     github?: string;
+    twitter?: string;
     portfolio?: string;
     targetRole: string;
   };
@@ -238,7 +242,7 @@ export interface StoredData {
   apiKey?: string;
   provider?: Provider;
   model?: string;
-  masterResume?: MasterResume;
+  extractionJson?: Record<string, unknown>;
   preferences?: {
     tone?: 'professional' | 'casual' | 'technical';
     format?: 'bullet' | 'paragraph';

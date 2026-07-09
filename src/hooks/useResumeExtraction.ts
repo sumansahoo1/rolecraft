@@ -6,13 +6,14 @@ import {
   extractJsonFromLLMResponse,
   RESUME_EXTRACTION_PROMPT,
 } from '@/lib/ai';
-import { getApiKey, getModel, getProvider } from '@/lib/storage';
+import { getApiKey, getModel, getProvider, setExtractionJson } from '@/lib/storage';
 import type { MasterResume, Project, OpenSource, OtherWork } from '@/types';
 
 interface ExtractionState {
   loading: boolean;
   error: string | null;
   result: MasterResume | null;
+  rawJson: Record<string, unknown> | null;
 }
 
 function parseProjects(raw: unknown): Project[] | undefined {
@@ -70,16 +71,22 @@ export function useResumeExtraction() {
     loading: false,
     error: null,
     result: null,
+    rawJson: null,
   });
 
   const extract = useCallback(async (rawText: string) => {
     const apiKey = getApiKey();
     if (!apiKey) {
-      setState({ loading: false, error: 'API key not set. Go to Settings.', result: null });
+      setState({
+        loading: false,
+        error: 'API key not set. Go to Settings.',
+        result: null,
+        rawJson: null,
+      });
       return null;
     }
 
-    setState({ loading: true, error: null, result: null });
+    setState({ loading: true, error: null, result: null, rawJson: null });
 
     try {
       const res = await createChatCompletion({
@@ -94,19 +101,28 @@ export function useResumeExtraction() {
           },
         ],
         temperature: 0.1,
-        maxTokens: 8192,
+        maxTokens: 16384,
       });
 
       const raw = extractJsonFromLLMResponse(res.content) as Record<string, unknown>;
+
+      setExtractionJson(raw);
 
       const parsed: MasterResume = {
         name: (raw.name as string) ?? '',
         email: (raw.email as string) ?? '',
         phone: (raw.phone as string) ?? undefined,
         linkedin: (raw.linkedin as string) ?? undefined,
+        github: (raw.github as string) ?? undefined,
+        twitter: (raw.twitter as string) ?? undefined,
         portfolio: (raw.portfolio as string) ?? undefined,
         summary: (raw.summary as string) ?? '',
-        skills: Array.isArray(raw.skills) ? (raw.skills as string[]) : [],
+        skills:
+          typeof raw.skills === 'object' && !Array.isArray(raw.skills)
+            ? (raw.skills as Record<string, string[]>)
+            : Array.isArray(raw.skills)
+              ? (raw.skills as string[])
+              : [],
         experience: Array.isArray(raw.experience)
           ? raw.experience.map((e: Record<string, unknown>) => ({
               company: (e.company as string) ?? '',
@@ -131,17 +147,17 @@ export function useResumeExtraction() {
         otherWorks: parseOtherWorks(raw.otherWorks),
       };
 
-      setState({ loading: false, error: null, result: parsed });
+      setState({ loading: false, error: null, result: parsed, rawJson: raw });
       return parsed;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Extraction failed';
-      setState({ loading: false, error: message, result: null });
+      setState({ loading: false, error: message, result: null, rawJson: null });
       return null;
     }
   }, []);
 
   const reset = useCallback(() => {
-    setState({ loading: false, error: null, result: null });
+    setState({ loading: false, error: null, result: null, rawJson: null });
   }, []);
 
   return { ...state, extract, reset };

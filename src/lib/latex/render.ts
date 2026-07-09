@@ -261,6 +261,15 @@ export function renderResumeHtml(spec: ResumeSpec): string {
       `<a href="https://github.com/${escapeHtml(handle)}" target="_blank">github.com/${escapeHtml(handle)}</a>`
     );
   }
+  if (meta.twitter) {
+    const handle = meta.twitter
+      .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, '')
+      .replace(/^@/, '')
+      .replace(/\/$/, '');
+    contactItems.push(
+      `<a href="https://x.com/${escapeHtml(handle)}" target="_blank">x.com/${escapeHtml(handle)}</a>`
+    );
+  }
   if (meta.portfolio) {
     const display = meta.portfolio.replace(/^https?:\/\//, '').replace(/\/$/, '');
     contactItems.push(
@@ -386,7 +395,14 @@ export function renderResumeText(spec: ResumeSpec): string {
 
   // Header
   lines.push(spec.meta.name.toUpperCase());
-  const contact = [spec.meta.email, spec.meta.phone, spec.meta.linkedin, spec.meta.portfolio]
+  const contact = [
+    spec.meta.email,
+    spec.meta.phone,
+    spec.meta.linkedin,
+    spec.meta.github,
+    spec.meta.twitter,
+    spec.meta.portfolio,
+  ]
     .filter(Boolean)
     .join(' | ');
   if (contact) lines.push(contact);

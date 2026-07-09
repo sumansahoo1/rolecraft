@@ -424,6 +424,13 @@ export async function generateSpecPdfBlob(
     const h = meta.github.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/\/$/, '');
     contactParts.push(`github.com/${h}`);
   }
+  if (meta.twitter) {
+    const h = meta.twitter
+      .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, '')
+      .replace(/^@/, '')
+      .replace(/\/$/, '');
+    contactParts.push(`x.com/${h}`);
+  }
   if (meta.portfolio) {
     contactParts.push(meta.portfolio.replace(/^https?:\/\//, '').replace(/\/$/, ''));
   }
