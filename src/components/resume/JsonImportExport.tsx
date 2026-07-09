@@ -15,7 +15,10 @@ export function JsonImportExport({ onImport }: JsonImportExportProps) {
 
   const handleExport = () => {
     const data = getExtractionJson();
-    if (!data) return;
+    if (!data) {
+      toast.error('No extraction data to export');
+      return;
+    }
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json',
     });
@@ -46,11 +49,9 @@ export function JsonImportExport({ onImport }: JsonImportExportProps) {
     reader.readAsText(file);
   };
 
-  const hasData = typeof window !== 'undefined' && getExtractionJson() != null;
-
   return (
     <div className="flex gap-2">
-      <Button variant="outline" size="sm" onClick={handleExport} disabled={!hasData}>
+      <Button variant="outline" size="sm" onClick={handleExport}>
         <Download className="mr-1.5 size-3.5" />
         Export JSON
       </Button>
