@@ -44,7 +44,7 @@ export function buildRevisionContext(
 
   if (mapping) {
     parts.push(
-      `## EXPERIENCE MAPPING\n- Matched Skills: ${mapping.matchedSkills.join(', ')}\n- Missing Skills: ${mapping.missingSkills.join(', ')}\n- Feature These Experiences: ${mapping.recommendedExperience.join(', ')}\n- Feature These Projects: ${mapping.recommendedProjects.join(', ')}\n- Downplay: ${mapping.sectionsToDownplay.join(', ')}`
+      `## EXPERIENCE MAPPING\n- Matched Skills: ${mapping.matchedSkills.join(', ')}\n- Missing Skills: ${mapping.missingSkills.join(', ')}\n- Feature These Experiences: ${mapping.recommendedExperience.join(', ')}\n- Feature These Projects: ${mapping.recommendedProjects.join(', ')}\n- Feature These Open Source: ${mapping.recommendedOpenSource.join(', ')}\n- Downplay: ${mapping.sectionsToDownplay.join(', ')}`
     );
   }
 

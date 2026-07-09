@@ -108,6 +108,7 @@ export interface ExperienceMapping {
   notes: string[];
   recommendedExperience: string[];
   recommendedProjects: string[];
+  recommendedOpenSource: string[];
   sectionsToDownplay: string[];
 }
 

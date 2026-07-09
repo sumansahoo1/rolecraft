@@ -67,8 +67,20 @@ Rules:
 - Infer missing fields as null, never fabricate data.
 - For skills, preserve ALL grouping categories exactly as they appear in the source text. If the resume has sections like "Frontend", "Backend", "Databases", "Languages" etc., use those as keys. If skills are listed without categories, use a single key like "Technical". Include both technical and soft skills — be exhaustive. Never flatten a categorized list into a single flat array.
 - For experience highlights, preserve all quantifiable achievements (numbers, percentages, scale).
-- For projects, capture EVERY project mentioned anywhere in the resume (personal projects, academic projects, hackathons, freelance work, side projects). Extract as much detail as possible: the project name, a description of what it does, the URL if provided, all technologies listed, the duration if mentioned, and bullet-point highlights of achievements.
-- For openSource, capture ALL open source contributions mentioned — repositories contributed to, maintained projects, significant pull requests, community involvement. Include the repo/project name, description of contributions, URLs, your role, and technologies.
+- For projects, capture EVERY project mentioned anywhere in the resume (personal projects, academic projects, hackathons, freelance work, side projects). Extract as much detail as possible: the project name, a description of what it does, the URL if provided, all technologies listed, the duration if mentioned, and bullet-point highlights of achievements. Contributions to external open source projects belong in openSource, not projects.
+- For openSource, be AGGRESSIVE in detection. Open source contributions are contributions to EXISTING external projects — distinct from the candidate's own projects. Look for these signals:
+  * "Contributor to [repo]" / "Contributed to [project/organization]"
+  * "Maintainer of [library/package]" or "Core team at [open source project]"
+  * "Merged PRs into [project]" / "PRs accepted by [organization]"
+  * GitHub links to repositories the candidate does NOT own
+  * Any mention of maintaining, contributing to, or fixing bugs in a public project, library, package, or framework
+  * "Open source" label anywhere in the resume text
+
+  DISTINGUISH carefully:
+  - "projects" = the candidate's OWN repositories, apps, or systems they designed and built themselves
+  - "openSource" = contributions (fixes, features, docs, reviews, maintenance) to EXISTING third-party projects
+
+  Even BRIEF mentions (e.g., "Contributed to Apache Kafka", "Fixed a bug in pytest", "Maintainer of requests-lite") must generate an openSource entry. If the resume has a dedicated "Open Source" section, capture every item in it. For each entry extract: repo/project name, description of what was contributed and the impact, URL if available, role (maintainer/contributor/occasional contributor), technologies used, and specific highlights (merged PRs, features built, bugs fixed, stars, npm downloads if mentioned).
 - For otherWorks, capture ALL additional work: publications (papers, articles, blog posts), speaking engagements (conference talks, meetups, workshops), patents, awards and honors, volunteering experience, languages spoken, and any other notable work. Set the "type" field to the most appropriate category.
 - Keep the original wording but clean up formatting artifacts.
 - If the text is not a valid resume, return null for all string fields.`;
@@ -120,6 +132,7 @@ Return ONLY valid JSON:
   "notes": ["string (strategic observations about how to position the candidate)"],
   "recommendedExperience": ["string (experience entries to FEATURE prominently — use company names from the master resume)"],
   "recommendedProjects": ["string (project names from the master resume to FEATURE — select 2-4 maximum)"],
+  "recommendedOpenSource": ["string (open source repo/contribution names from the master resume to FEATURE — select 0-3, preference for maintainer roles and significant contributions over minor ones)"],
   "sectionsToDownplay": ["string (content to minimize or remove — weak bullets, outdated tech, low-impact work)"]
 }
 
@@ -281,6 +294,8 @@ SUMMARY: 2-3 lines. Answer: Who am I? What do I specialize in? What value do I p
 EXPERIENCE: For each featured role — Company, Role, Dates. 3-6 bullets maximum per role. Only strongest bullets. Every bullet must demonstrate impact.
 
 PROJECTS: 2-4 projects maximum. For each — Project Name. 2-3 bullets maximum. Focus on Problem → Solution → Impact. Avoid feature lists.
+
+OPEN SOURCE: Include if the Master Resume has openSource entries AND they strengthen the candidacy for this role. For each entry — Project Name, Role. 1-2 bullets on contributions and impact. Prefer meaningful contributions (merged PRs, maintainer role) over minor contributions.
 
 SKILLS: Group into Languages, Frameworks, Databases, Tools & Infrastructure. Include only relevant skills present in the Master Resume.
 
