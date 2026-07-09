@@ -13,8 +13,9 @@ import { useResumeExtraction } from '@/hooks/useResumeExtraction';
 import {
   getApiKey,
   getExtractionJson,
-  getRawText as getStoredRawText,
   setRawText as setStoredRawText,
+  clearExtractionJson,
+  clearRawText,
 } from '@/lib/storage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -29,18 +30,15 @@ export default function ResumePage() {
     rawJson: extractedRawJson,
   } = useResumeExtraction();
   const [savedRawJson, setSavedRawJson] = useState<Record<string, unknown> | null>(null);
-  const [rawText, setRawText] = useState<string | null>(null);
 
   const rawJson = extractedRawJson ?? savedRawJson;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSavedRawJson(getExtractionJson());
-    setRawText(getStoredRawText());
   }, []);
 
   const handleExtract = async (text: string) => {
-    setRawText(text);
     setStoredRawText(text);
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -52,11 +50,10 @@ export default function ResumePage() {
   };
 
   const handleReExtract = () => {
-    if (rawText) {
-      handleExtract(rawText);
-    } else {
-      reset();
-    }
+    clearExtractionJson();
+    clearRawText();
+    reset();
+    setSavedRawJson(null);
   };
 
   const handleImport = () => {
