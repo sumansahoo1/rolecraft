@@ -32,8 +32,9 @@ export function ResumeInput({ onExtract, loading }: ResumeInputProps) {
         extracted = await file.text();
       }
       setText(extracted);
-    } catch {
-      setFileName('Failed to read file');
+    } catch (err) {
+      console.error('Failed to read PDF/DOCX file:', err);
+      setFileName(`Failed to read file: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setFileLoading(false);
     }

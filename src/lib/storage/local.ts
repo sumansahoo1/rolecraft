@@ -20,7 +20,7 @@ const KEYS = {
   apiKey_openrouter: 'rolecraft_api_key_openrouter',
   model: 'rolecraft_model',
   extractionJson: 'rolecraft_extraction_json',
-  rawText: 'rolecraft_raw_text',
+
   preferences: 'rolecraft_preferences',
 } as const;
 
@@ -124,19 +124,6 @@ export function setExtractionJson(json: Record<string, unknown>): void {
 
 export function clearExtractionJson(): void {
   localStorage.removeItem(KEYS.extractionJson);
-}
-
-export function getRawText(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(KEYS.rawText);
-}
-
-export function setRawText(text: string): void {
-  localStorage.setItem(KEYS.rawText, text);
-}
-
-export function clearRawText(): void {
-  localStorage.removeItem(KEYS.rawText);
 }
 
 // ─── Preferences ────────────────────────────────────────────

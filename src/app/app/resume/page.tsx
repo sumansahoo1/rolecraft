@@ -10,13 +10,7 @@ import { ResumeInput } from '@/components/resume/ResumeInput';
 import { JsonImportExport } from '@/components/resume/JsonImportExport';
 import { RawJsonViewer } from '@/components/resume/RawJsonViewer';
 import { useResumeExtraction } from '@/hooks/useResumeExtraction';
-import {
-  getApiKey,
-  getExtractionJson,
-  setRawText as setStoredRawText,
-  clearExtractionJson,
-  clearRawText,
-} from '@/lib/storage';
+import { getApiKey, getExtractionJson, clearExtractionJson } from '@/lib/storage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function ResumePage() {
@@ -39,7 +33,6 @@ export default function ResumePage() {
   }, []);
 
   const handleExtract = async (text: string) => {
-    setStoredRawText(text);
     const apiKey = getApiKey();
     if (!apiKey) {
       toast.error('Set your DeepSeek API key in Settings first');
@@ -51,7 +44,6 @@ export default function ResumePage() {
 
   const handleReExtract = () => {
     clearExtractionJson();
-    clearRawText();
     reset();
     setSavedRawJson(null);
   };
