@@ -357,6 +357,8 @@ export function usePipeline() {
             email: (resumeData.email as string) || resumeSpec.meta.email,
             phone: (resumeData.phone as string) || resumeSpec.meta.phone || undefined,
             linkedin: (resumeData.linkedin as string) || resumeSpec.meta.linkedin || undefined,
+            github: (resumeData.github as string) || resumeSpec.meta.github || undefined,
+            twitter: (resumeData.twitter as string) || resumeSpec.meta.twitter || undefined,
             portfolio: (resumeData.portfolio as string) || resumeSpec.meta.portfolio || undefined,
           };
         } catch {

@@ -113,6 +113,8 @@ export function useResumeExtraction() {
         email: (raw.email as string) ?? '',
         phone: (raw.phone as string) ?? undefined,
         linkedin: (raw.linkedin as string) ?? undefined,
+        github: (raw.github as string) ?? undefined,
+        twitter: (raw.twitter as string) ?? undefined,
         portfolio: (raw.portfolio as string) ?? undefined,
         summary: (raw.summary as string) ?? '',
         skills:

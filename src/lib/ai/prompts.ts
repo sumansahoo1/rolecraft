@@ -11,6 +11,8 @@ export const RESUME_EXTRACTION_PROMPT = `You are an expert resume parser. Extrac
   "email": "string",
   "phone": "string | null",
   "linkedin": "string | null",
+  "github": "string | null",
+  "twitter": "string | null (Twitter/X profile URL)",
   "portfolio": "string | null",
   "summary": "string (professional summary, 2-3 sentences)",
   "skills": { "Category Name": ["skill1", "skill2"] } | ["string"],
@@ -402,6 +404,7 @@ Return ONLY valid JSON with this exact structure:
     "location": "string | null (city and country/region)",
     "linkedin": "string | null",
     "github": "string | null (GitHub username or URL)",
+    "twitter": "string | null (Twitter/X username or URL)",
     "portfolio": "string | null",
     "targetRole": "string (use the Target Role provided in the context — do NOT infer or change it)"
   },

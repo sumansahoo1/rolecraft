@@ -63,6 +63,8 @@ export interface MasterResume {
   email: string;
   phone?: string;
   linkedin?: string;
+  github?: string;
+  twitter?: string;
   portfolio?: string;
   summary: string;
   skills: string[] | Record<string, string[]>;
@@ -166,6 +168,7 @@ export interface ResumeSpec {
     location?: string;
     linkedin?: string;
     github?: string;
+    twitter?: string;
     portfolio?: string;
     targetRole: string;
   };

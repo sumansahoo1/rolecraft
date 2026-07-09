@@ -113,6 +113,21 @@ export function generateLatexSource(spec: ResumeSpec): string {
       `\\href{${linkedinUrl}}{\\texttt{linkedin.com/in/${escapeLatex(displayHandle)}}}`
     );
   }
+  if (meta.github) {
+    const handle = meta.github.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/\/$/, '');
+    contactItems.push(
+      `\\href{https://github.com/${escapeLatexUrl(handle)}}{\\texttt{github.com/${escapeLatex(handle)}}}`
+    );
+  }
+  if (meta.twitter) {
+    const handle = meta.twitter
+      .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, '')
+      .replace(/^@/, '')
+      .replace(/\/$/, '');
+    contactItems.push(
+      `\\href{https://x.com/${escapeLatexUrl(handle)}}{\\texttt{x.com/${escapeLatex(handle)}}}`
+    );
+  }
   if (meta.portfolio) {
     const portfolioDisplay = meta.portfolio.replace(/^https?:\/\//, '');
     contactItems.push(
