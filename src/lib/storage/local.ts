@@ -6,7 +6,7 @@
  * directly from the browser to the AI provider.
  */
 
-import type { StoredData, Provider } from '@/types';
+import type { StoredData, Provider, ChatTurn } from '@/types';
 
 const KEYS = {
   // Legacy generic key (backward compat)
@@ -22,6 +22,9 @@ const KEYS = {
   extractionJson: 'rolecraft_extraction_json',
 
   preferences: 'rolecraft_preferences',
+
+  githubPat: 'rolecraft_github_pat',
+  chatHistory: 'rolecraft_chat_history',
 } as const;
 
 const API_KEY_KEYS: Record<Provider, string> = {
@@ -143,6 +146,47 @@ export function setPreferences(prefs: NonNullable<StoredData['preferences']>): v
   localStorage.setItem(KEYS.preferences, JSON.stringify(prefs));
 }
 
+// ─── GitHub PAT ─────────────────────────────────────────────
+
+export function getGithubPat(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(KEYS.githubPat);
+}
+
+export function setGithubPat(pat: string): void {
+  localStorage.setItem(KEYS.githubPat, pat);
+}
+
+export function clearGithubPat(): void {
+  localStorage.removeItem(KEYS.githubPat);
+}
+
+// ─── Chat History ───────────────────────────────────────────
+
+const MAX_CHAT_TURNS = 100;
+
+export function getChatHistory(): ChatTurn[] {
+  if (typeof window === 'undefined') return [];
+  const raw = localStorage.getItem(KEYS.chatHistory);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed as ChatTurn[];
+  } catch {
+    return [];
+  }
+}
+
+export function setChatHistory(turns: ChatTurn[]): void {
+  const capped = turns.slice(-MAX_CHAT_TURNS);
+  localStorage.setItem(KEYS.chatHistory, JSON.stringify(capped));
+}
+
+export function clearChatHistory(): void {
+  localStorage.removeItem(KEYS.chatHistory);
+}
+
 // ─── Bulk ───────────────────────────────────────────────────
 
 export function getAllStoredData(): Partial<StoredData> {
@@ -152,6 +196,7 @@ export function getAllStoredData(): Partial<StoredData> {
     model: getModel(),
     extractionJson: getExtractionJson() ?? undefined,
     preferences: getPreferences() ?? undefined,
+    githubPat: getGithubPat() ?? undefined,
   };
 }
 

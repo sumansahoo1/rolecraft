@@ -243,6 +243,7 @@ export interface StoredData {
   provider?: Provider;
   model?: string;
   extractionJson?: Record<string, unknown>;
+  githubPat?: string;
   preferences?: {
     tone?: 'professional' | 'casual' | 'technical';
     format?: 'bullet' | 'paragraph';
@@ -252,3 +253,38 @@ export interface StoredData {
 // ─── App Status ─────────────────────────────────────────────
 
 export type AppStatus = 'idle' | 'running' | 'paused' | 'complete' | 'error';
+
+// ─── GitHub Chat ────────────────────────────────────────────
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  status: 'pending' | 'success' | 'error';
+  summary?: string;
+  error?: string;
+}
+
+export interface ChatTurn {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  toolCalls?: ToolCall[];
+}
+
+export interface ToolResult {
+  data: unknown;
+  truncated?: boolean;
+}
+
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  argsSchema: Record<string, unknown>;
+  run: (args: Record<string, unknown>, ctx: GithubContext) => Promise<ToolResult>;
+}
+
+export interface GithubContext {
+  pat: string;
+  signal?: AbortSignal;
+}

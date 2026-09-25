@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings, FileText, Wand2, CircleIcon } from 'lucide-react';
+import { Settings, FileText, Wand2, CircleIcon, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -18,6 +18,11 @@ const navItems = [
     icon: FileText,
   },
   {
+    href: '/app/chat',
+    label: 'GitHub Chat',
+    icon: MessageSquare,
+  },
+  {
     href: '/app/settings',
     label: 'Settings',
     icon: Settings,
@@ -28,9 +33,9 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-14 flex-col border-r bg-background">
+    <aside className="bg-background fixed inset-y-0 left-0 z-30 flex w-14 flex-col border-r">
       <Link href="/" className="flex h-14 items-center justify-center border-b">
-        <CircleIcon className="size-5 text-primary" />
+        <CircleIcon className="text-primary size-5" />
       </Link>
 
       <nav className="flex flex-1 flex-col items-center gap-1 px-2 py-3">

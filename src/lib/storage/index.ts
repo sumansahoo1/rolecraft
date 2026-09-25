@@ -11,6 +11,12 @@ export {
   clearExtractionJson,
   getPreferences,
   setPreferences,
+  getGithubPat,
+  setGithubPat,
+  clearGithubPat,
+  getChatHistory,
+  setChatHistory,
+  clearChatHistory,
   getAllStoredData,
   clearAll,
 } from './local';
