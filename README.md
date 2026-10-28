@@ -38,6 +38,15 @@ Multi-signal convergence detection — no single heuristic decides "done":
 
 Hard cap at 50 iterations. Usually converges in 4–7.
 
+### GitHub Work Summarizer
+
+Paste a public GitHub profile URL, `@handle`, or username into **GitHub Work**. The browser pulls public profile data, repositories, languages, READMEs, sampled commits, pull requests, and issues directly from `api.github.com`, then builds a deterministic multi-year timeline before asking the AI for a grounded narrative.
+
+- **Sampled, not complete.** The report covers the account's full date range, but commit and PR/issue evidence is sampled. Yearly counts are lower bounds, and the UI says so. It is not a GitHub contribution graph.
+- **REST-only and client-side.** No GraphQL, no proxy, no API routes. Anonymous access works within GitHub's 60 requests/hour limit; an optional personal access token (fine-grained public-read or classic no-scope) raises this to 5,000/hour and enables deeper sampling. The token is stored in `localStorage` and sent only to `api.github.com`.
+- **Grounded AI output.** The AI receives a compact dossier and may only reference fetched repositories. Numbers are checked against deterministic data; unverified numeric claims are removed. Unknown repositories are dropped. The deterministic stats, timeline, and project facts remain available even if the AI summary fails.
+- **Export and reuse.** Copy or download a Markdown report, or append up to four top projects to the master resume without overwriting existing data.
+
 ### Auto-fit
 
 After generation, the ResumeSpec is rendered to HTML and measured in a real browser layout engine. Content that overflows 1 letter-size page triggers progressive font-size shrinking (5 levels, 0.5pt per level) until it fits. The final PDF is generated from the shrunk spec with measurement-driven sizing.
@@ -46,7 +55,7 @@ After generation, the ResumeSpec is rendered to HTML and measured in a real brow
 
 - **100% client-side.** No server, no proxy, no database. Your API key and resume sit in `localStorage`. Browser talks directly to AI providers. You can verify this in the network tab.
 - **Multi-provider.** DeepSeek, OpenAI, Anthropic, Google (Gemini), and OpenRouter. Per-provider API key storage with legacy key migration. Each provider has its own request body builder and response parser (Anthropic's Messages API and Google's generateContent differ from the OpenAI-compatible shape).
-- **8 distinct prompts**, each with a specific job. The resume generation prompt is ~150 lines covering the impact framework, quantification tiers, role tailoring, and inference rules. The critique prompt is ~50 lines of structured analysis dimensions plus categorized suggestions.
+- **9 distinct prompts**, each with a specific job. The resume generation prompt is ~150 lines covering the impact framework, quantification tiers, role tailoring, and inference rules. The critique prompt is ~50 lines of structured analysis dimensions plus categorized suggestions. The GitHub summary prompt is grounding-first: it forbids inferred employment/impact claims and requires exact repository names from the dossier.
 - **The convergence logic is explicit**, not just asking the LLM "are we done?" It cross-checks staleness, dual score ceilings, delta stagnation, and LLM self-judgment — with protections against infinite critique loops.
 - **LaTeX output** via a deterministic template (not LLM-generated `.tex` — those hallucinate). Compiles to a 1-page letter-size PDF with proper typesetting.
 - **Everything is typed.** Full TypeScript interfaces for the pipeline state, resume structure, critique results, revision plans, and LaTeX spec.
@@ -66,16 +75,19 @@ Next.js 16 · TypeScript · Tailwind CSS v4 · shadcn/ui · DeepSeek / OpenAI / 
 
 ## Dev tooling
 
-Prettier (with `prettier-plugin-tailwindcss`) · ESLint v9 flat config (core-web-vitals, typescript, prettier, tailwindcss) · Husky v9 + lint-staged (pre-commit: eslint --fix + prettier) · commitlint (Conventional Commits) · knip (dead code detection) · EditorConfig · VS Code workspace settings
+Prettier (with `prettier-plugin-tailwindcss`) · ESLint v9 flat config (core-web-vitals, typescript, prettier, tailwindcss) · Vitest (unit tests, node environment) · Husky v9 + lint-staged (pre-commit: eslint --fix + prettier) · commitlint (Conventional Commits) · knip (dead code detection) · EditorConfig · VS Code workspace settings
 
 ```bash
-npm run dev          # Start dev server at localhost:3000
-npm run build        # Production build
-npm run lint         # ESLint
-npm run format       # Prettier --write
-npm run format:check # Prettier --check
-npm run knip         # Dead code detection
-npm run sort-pkg     # Canonical package.json ordering
+npm run dev           # Start dev server at localhost:3000
+npm run build         # Production build
+npm run lint          # ESLint
+npm run test          # Vitest unit tests (non-watch)
+npm run test:watch    # Vitest in watch mode
+npm run test:typecheck # Typecheck tests (separate from Next build)
+npm run format        # Prettier --write
+npm run format:check  # Prettier --check
+npm run knip          # Dead code detection
+npm run sort-pkg      # Canonical package.json ordering
 ```
 
 ## Structure
@@ -86,16 +98,29 @@ src/
     app/
       builder/       # Pipeline orchestration page
       resume/        # Master resume editor + AI extraction from PDF/DOCX
+      github/        # GitHub work summarizer
       settings/      # Provider + API key + model selection
   hooks/
-    usePipeline.ts      # State machine, 7-step pipeline, critique loop
-    useResumeExtraction.ts  # PDF/DOCX → structured MasterResume
-    useListField.ts         # Reusable list field management
+    usePipeline.ts           # State machine, 7-step pipeline, critique loop
+    useResumeExtraction.ts   # PDF/DOCX → structured MasterResume
+    useGitHubWorkSummary.ts  # GitHub collection/summary state machine
+    useListField.ts          # Reusable list field management
   lib/
     ai/
-      prompts.ts         # 8 system prompts
+      prompts.ts         # 9 system prompts
       provider.ts        # Multi-provider dispatch (5 providers)
       json-parser.ts     # Robust JSON extraction from LLM output
+    github/
+      username.ts        # Profile URL/handle parsing + validation
+      client.ts          # REST client, budget, retries, abort, rate limits
+      normalize.ts       # API → domain, public-only filtering, URL safety
+      aggregate.ts       # Stats, timeline, language mix, project ranking
+      collect.ts         # Sampling pipeline + request caps
+      context.ts         # Compact AI dossier + compaction
+      summary.ts         # AI output validation + numeric grounding
+      state.ts           # Reducer + pre-collection key guard
+      markdown.ts        # Markdown report builder
+      resume-merge.ts    # Safe project append into raw extraction JSON
     pipeline/
       classification.ts  # Categorized suggestions + priority
       constants.ts       # All tuning knobs
@@ -122,6 +147,7 @@ src/
     utils.ts             # uid(), clamp(), sleep()
   components/
     layout/              # AppSidebar
+    github/              # Work panel, report, summary, coverage, progress
     pipeline/            # CritiquePanel, ExperienceMappingPanel, JDAnalysisPanel,
                          #   LaTeXEditor, LaTeXPreview, PipelineProgress,
                          #   ResumeDisplay, VerificationPanel
@@ -129,7 +155,8 @@ src/
     ui/                  # shadcn/ui primitives (badge, button, card, dialog, etc.)
     ErrorBoundary.tsx
   types/
-    index.ts             # All TypeScript interfaces
+    index.ts             # Shared TypeScript interfaces
+    github.ts            # GitHub dataset, summary, progress, error types
 ```
 
 Start in `src/hooks/usePipeline.ts` (the state machine) and `src/lib/ai/prompts.ts` (the prompts).

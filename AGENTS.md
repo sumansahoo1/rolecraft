@@ -17,16 +17,21 @@ npm run format:check # Prettier --check .
 npm run knip         # Dead code detection
 npm run sort-pkg     # Canonical package.json key ordering
 npm run start        # Start production server
+npm run test         # Vitest unit tests (non-watch)
+npm run test:watch   # Vitest watch mode
+npm run test:typecheck # tsc on tests + vitest config
 ```
 
-No `test` or `typecheck` scripts — only lint is wired up. Pre-commit hooks run lint-staged (eslint --fix + prettier on staged .ts/.tsx, prettier on .json/.css/.md/.mjs) and commitlint validates Conventional Commits format.
+Vitest is configured in `vitest.config.mts` (node environment, `@` alias). Next's `tsconfig.json` excludes test files and `__tests__`; tests are typechecked separately with `tsconfig.test.json`. Pre-commit hooks run lint-staged (eslint --fix + prettier on staged .ts/.tsx, prettier on .json/.css/.md/.mjs) and commitlint validates Conventional Commits format.
 
 ## Architecture
 
 - **100% client-side.** No backend, no API routes. AI provider calls go directly from browser to DeepSeek / OpenAI / Anthropic / Google / OpenRouter.
 - Per-provider API key storage in `localStorage` with legacy key backward compat. Each provider stored separately — switch providers without re-entering keys.
 - `src/lib/ai/provider.ts` — `createChatCompletion()` dispatches by provider with per-provider body builders (OpenAI-compatible, Anthropic Messages API, Google generateContent) and response parsers.
-- `src/lib/storage/local.ts` — `localStorage` wrappers (API key per provider, master resume, preferences). SSR-safe (guards `typeof window === "undefined"`).
+- `src/lib/storage/local.ts` — `localStorage` wrappers (API key per provider, optional GitHub token, master resume, preferences). SSR-safe (guards `typeof window === "undefined"`).
+- `src/lib/github/` — browser-only GitHub REST collection. `client.ts` owns request budgets, timeouts, abort, and retry; `collect.ts` samples per-year commits and public PRs/issues within anonymous/token caps; `aggregate.ts` computes all stats; the AI only narrates a compact dossier and its numeric claims are validated. REST-only, no GraphQL, no proxy.
+- GitHub data is sampled, not complete. All UI copy must say so. Anonymous mode is limited to 60 core requests/hour; an optional local GitHub token raises this to 5,000/hour and is sent only to `api.github.com`.
 
 ## Tech stack quirks
 
@@ -43,7 +48,8 @@ No `test` or `typecheck` scripts — only lint is wired up. Pre-commit hooks run
 | `/app`          | Redirect: → `/app/builder` if resume set, else `/app/resume`                     |
 | `/app/builder`  | Pipeline: JD input → analysis → mapping → generation → critique → LaTeX → export |
 | `/app/resume`   | Master resume editor + AI extraction from PDF/DOCX                               |
-| `/app/settings` | Provider + API key + model selection                                             |
+| `/app/github`   | GitHub profile → sampled public work summary → Markdown / resume projects        |
+| `/app/settings` | Provider + API key + model selection + optional GitHub token                     |
 
 ## Project structure (high-level)
 
@@ -55,11 +61,12 @@ src/
   lib/latex/      # Deterministic .tex template, HTML render, browser measure, auto-shrink
   lib/export/     # TXT, DOCX, PDF (plain + spec), .tex download
   lib/parse/      # PDF + DOCX text extraction
-  lib/storage/    # localStorage wrappers (per-provider key + legacy compat)
-  lib/utils/      # uid(), clamp(), sleep()
-  types/          # All TypeScript interfaces (resume, pipeline, critique, LaTeX, storage)
-  components/     # Layout shell, pipeline panels, resume editor, shadcn/ui primitives
-  hooks/          # usePipeline (state machine), useResumeExtraction, useListField
+  lib/storage/    # localStorage wrappers (per-provider key + optional GitHub token)
+  lib/github/     # REST collection, rate budgets, aggregation, grounding, Markdown
+  lib/utils/      # uid(), clamp(), abortable sleep()
+  types/          # Shared interfaces + github.ts (dataset, summary, progress, errors)
+  components/     # Layout shell, pipeline/resume/GitHub panels, shadcn/ui primitives
+  hooks/          # usePipeline, useResumeExtraction, useGitHubWorkSummary, useListField
 ```
 
 ## Pipeline types
