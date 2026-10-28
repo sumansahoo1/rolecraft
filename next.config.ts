@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
           key: 'Content-Security-Policy',
           value: [
             "default-src 'self'",
-            "connect-src 'self' https://api.deepseek.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai",
+            "connect-src 'self' https://api.deepseek.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai https://boards-api.greenhouse.io https://api.lever.co https://api.eu.lever.co https://api.smartrecruiters.com https://r.jina.ai",
+            "img-src 'self' data:",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",

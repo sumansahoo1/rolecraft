@@ -23,6 +23,7 @@ import {
   buildCritiqueContext,
   buildRevisionContext,
   checkAlgorithmicConvergence,
+  createRunEpoch,
   extractRevisionReport,
   buildRevisionPlan,
   MAX_CRITIQUE_ITERATIONS,
@@ -30,6 +31,7 @@ import {
   RESUME_GENERATION_TEMPERATURE,
   DEFAULT_STEP_TEMPERATURE,
 } from '@/lib/pipeline';
+import { UI_COPY } from '@/lib/jd-link/messages';
 import type {
   JDAnalysis,
   ExperienceMapping,
@@ -83,7 +85,8 @@ export function usePipeline() {
     latexVerification: null,
   });
 
-  const abortRef = useRef(false);
+  const [runEpoch] = useState(() => createRunEpoch());
+  const runInFlightRef = useRef(false);
 
   const runStep = useCallback(
     async (
@@ -143,71 +146,92 @@ export function usePipeline() {
   );
 
   const run = useCallback(
-    async (jd: string, extractionJson: Record<string, unknown>) => {
-      abortRef.current = false;
+    async (jd: string, extractionJson: Record<string, unknown>): Promise<boolean> => {
+      if (runInFlightRef.current) return false; // synchronous, before any await
+      const myEpoch = runEpoch.begin();
 
-      const resumeData = extractionJson;
-      const resumeDataStr = JSON.stringify(resumeData, null, 2);
-
-      setState({
-        running: true,
-        currentStep: 'jd-analysis',
-        error: null,
-        analysis: null,
-        mapping: null,
-        currentResume: null,
-        critique: null,
-        iteration: 0,
-        history: [],
-        bestResume: null,
-        bestScore: 0,
-        convergenceResult: null,
-        resumeSpec: null,
-        latexSource: null,
-        latexHtmlBlob: null,
-        latexVerification: null,
-      });
-
-      const apiKey = getApiKey();
-      if (!apiKey) {
-        setState((s) => ({
-          ...s,
-          running: false,
-          error: 'API key not set. Go to Settings.',
-        }));
-        return;
-      }
+      const setStateIfCurrent = (update: (s: PipelineState) => PipelineState): boolean => {
+        if (!runEpoch.isCurrent(myEpoch)) return false;
+        setState(update);
+        return true;
+      };
 
       try {
+        runInFlightRef.current = true; // R3-8: inside try/finally, never stuck
+
+        const resumeData = extractionJson;
+        const resumeDataStr = JSON.stringify(resumeData, null, 2);
+
+        if (
+          !setStateIfCurrent(() => ({
+            running: true,
+            currentStep: 'jd-analysis',
+            error: null,
+            analysis: null,
+            mapping: null,
+            currentResume: null,
+            critique: null,
+            iteration: 0,
+            history: [],
+            bestResume: null,
+            bestScore: 0,
+            convergenceResult: null,
+            resumeSpec: null,
+            latexSource: null,
+            latexHtmlBlob: null,
+            latexVerification: null,
+          }))
+        ) {
+          return false;
+        }
+
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          setStateIfCurrent((s) => ({
+            ...s,
+            running: false,
+            error: UI_COPY.missingApiKey,
+          }));
+          return false;
+        }
+
         // Step 1: JD Analysis
         const analysisRaw = await runStep('jd-analysis', `Analyze this job description:\n\n${jd}`);
-        if (abortRef.current) return;
+        if (!runEpoch.isCurrent(myEpoch)) return false;
         const analysis = extractJsonFromLLMResponse(analysisRaw) as JDAnalysis;
-        setState((s) => ({
-          ...s,
-          currentStep: 'experience-mapping',
-          analysis,
-        }));
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            currentStep: 'experience-mapping',
+            analysis,
+          }))
+        ) {
+          return false;
+        }
 
         // Step 2: Experience Mapping
         const mappingRaw = await runStep(
           'experience-mapping',
           `Job Analysis:\n${JSON.stringify(analysis, null, 2)}\n\nCandidate Master Resume:\n${resumeDataStr}`
         );
-        if (abortRef.current) return;
+        if (!runEpoch.isCurrent(myEpoch)) return false;
         const mapping = extractJsonFromLLMResponse(mappingRaw) as ExperienceMapping;
-        setState((s) => ({
-          ...s,
-          currentStep: 'resume-generation',
-          mapping,
-        }));
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            currentStep: 'resume-generation',
+            mapping,
+          }))
+        ) {
+          return false;
+        }
 
         // Step 3: Initial Resume Generation
         const resumeRaw = await runStep(
           'resume-generation',
           `TARGET ROLE: ${analysis.roleTitle}\n\nJOB ANALYSIS:\n${JSON.stringify(analysis, null, 2)}\n\nEXPERIENCE MAPPING (what to feature, what to downplay):\n${JSON.stringify(mapping, null, 2)}\n\nMASTER RESUME (source of truth — USE ONLY THIS DATA):\n${resumeDataStr}`
         );
-        if (abortRef.current) return;
+        if (!runEpoch.isCurrent(myEpoch)) return false;
         let resume = resumeRaw;
 
         // Step 4: Critique Loop (strengthened)
@@ -224,12 +248,16 @@ export function usePipeline() {
 
         do {
           iteration++;
-          setState((s) => ({
-            ...s,
-            currentStep: 'resume-critique',
-            currentResume: resume,
-            iteration,
-          }));
+          if (
+            !setStateIfCurrent((s) => ({
+              ...s,
+              currentStep: 'resume-critique',
+              currentResume: resume,
+              iteration,
+            }))
+          ) {
+            return false;
+          }
 
           // Early-exit: if the resume text is essentially unchanged from the
           // previous iteration, the revision had no effect — skip the critique
@@ -238,20 +266,24 @@ export function usePipeline() {
             const prevResume = localHistory[localHistory.length - 1].resume;
             const similarity = computeResumeTextSimilarity(resume, prevResume);
             if (similarity >= RESUME_SIMILARITY_THRESHOLD) {
-              setState((s) => ({
-                ...s,
-                critique,
-                currentResume: resume,
-                history: [...localHistory],
-                bestResume,
-                bestScore,
-                convergenceResult: {
-                  isConverged: true,
-                  reason: 'no_resume_change',
-                  scoreDelta: null,
-                  newWeaknesses: [],
-                },
-              }));
+              if (
+                !setStateIfCurrent((s) => ({
+                  ...s,
+                  critique,
+                  currentResume: resume,
+                  history: [...localHistory],
+                  bestResume,
+                  bestScore,
+                  convergenceResult: {
+                    isConverged: true,
+                    reason: 'no_resume_change',
+                    scoreDelta: null,
+                    newWeaknesses: [],
+                  },
+                }))
+              ) {
+                return false;
+              }
               break;
             }
           }
@@ -266,7 +298,7 @@ export function usePipeline() {
             localHistory
           );
           const critiqueRaw = await runStep('resume-critique', critiqueContext);
-          if (abortRef.current) return;
+          if (!runEpoch.isCurrent(myEpoch)) return false;
 
           critique = extractJsonFromLLMResponse(critiqueRaw) as ResumeCritique;
 
@@ -287,15 +319,19 @@ export function usePipeline() {
             localHistory
           );
 
-          setState((s) => ({
-            ...s,
-            critique,
-            currentResume: resume,
-            history: [...localHistory],
-            bestResume,
-            bestScore,
-            convergenceResult,
-          }));
+          if (
+            !setStateIfCurrent((s) => ({
+              ...s,
+              critique,
+              currentResume: resume,
+              history: [...localHistory],
+              bestResume,
+              bestScore,
+              convergenceResult,
+            }))
+          ) {
+            return false;
+          }
 
           if (convergenceResult.isConverged) break;
 
@@ -324,7 +360,7 @@ export function usePipeline() {
               RESUME_REVISION_PROMPT,
               0.3 // Lower temperature for surgical edits
             );
-            if (abortRef.current) return;
+            if (!runEpoch.isCurrent(myEpoch)) return false;
 
             // Parse revision report if present
             const { resume: cleanedResume } = extractRevisionReport(regenRaw);
@@ -335,16 +371,15 @@ export function usePipeline() {
         // ─── LaTeX Phase ─────────────────────────────────────────
 
         // Step 5: Generate ResumeSpec from best text resume
-        setState((s) => ({
-          ...s,
-          currentStep: 'resume-spec',
-        }));
+        if (!setStateIfCurrent((s) => ({ ...s, currentStep: 'resume-spec' }))) {
+          return false;
+        }
 
         const specRaw = await runStep(
           'resume-spec',
           `Target Role: ${analysis.roleTitle}\n\nConvert this resume into the structured format:\n\n${bestResume}`
         );
-        if (abortRef.current) return;
+        if (!runEpoch.isCurrent(myEpoch)) return false;
 
         let resumeSpec: ResumeSpec;
         try {
@@ -363,39 +398,51 @@ export function usePipeline() {
           };
         } catch {
           // If parsing fails, set error and skip LaTeX phase
-          setState((s) => ({
-            ...s,
-            running: false,
-            currentStep: null,
-            currentResume: bestResume,
-            error:
-              'Failed to parse ResumeSpec from AI response. The text resume is available for download.',
-            critique,
-            iteration,
-            history: [...localHistory],
-            bestResume,
-            bestScore,
-          }));
-          return;
+          if (
+            !setStateIfCurrent((s) => ({
+              ...s,
+              running: false,
+              currentStep: null,
+              currentResume: bestResume,
+              error:
+                'Failed to parse ResumeSpec from AI response. The text resume is available for download.',
+              critique,
+              iteration,
+              history: [...localHistory],
+              bestResume,
+              bestScore,
+            }))
+          ) {
+            return false;
+          }
+          return false;
         }
 
         // Step 6: Generate LaTeX source from ResumeSpec (deterministic)
-        setState((s) => ({
-          ...s,
-          currentStep: 'latex-generation',
-          resumeSpec,
-        }));
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            currentStep: 'latex-generation',
+            resumeSpec,
+          }))
+        ) {
+          return false;
+        }
 
         // Generate LaTeX source for .tex download
         const latexSource = generateLatexSource(resumeSpec);
-        if (abortRef.current) return;
+        if (!runEpoch.isCurrent(myEpoch)) return false;
 
         // Step 7: Render resume as HTML for preview and PDF
-        setState((s) => ({
-          ...s,
-          currentStep: 'latex-verification',
-          latexSource,
-        }));
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            currentStep: 'latex-verification',
+            latexSource,
+          }))
+        ) {
+          return false;
+        }
 
         let latexHtmlBlob: Blob | null = null;
 
@@ -418,45 +465,59 @@ export function usePipeline() {
         // ─── Verification checks ───
         const latexVerification = buildLatexVerificationResult(resumeSpec, shrinkResult);
 
-        setState((s) => ({
-          ...s,
-          latexSource,
-          latexHtmlBlob,
-          latexVerification,
-        }));
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            latexSource,
+            latexHtmlBlob,
+            latexVerification,
+          }))
+        ) {
+          return false;
+        }
 
         // Final state
-        setState((s) => ({
-          ...s,
-          running: false,
-          currentStep: null,
-          currentResume: bestResume,
-          latexSource,
-          latexHtmlBlob,
-          latexVerification,
-          resumeSpec,
-          critique,
-          iteration,
-          history: [...localHistory],
-          bestResume,
-          bestScore,
-        }));
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            running: false,
+            currentStep: null,
+            currentResume: bestResume,
+            latexSource,
+            latexHtmlBlob,
+            latexVerification,
+            resumeSpec,
+            critique,
+            iteration,
+            history: [...localHistory],
+            bestResume,
+            bestScore,
+          }))
+        ) {
+          return false;
+        }
+        return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Pipeline failed';
-        setState((s) => ({ ...s, running: false, error: message }));
+        console.error(err); // raw provider error: console only, never rendered
+        if (!runEpoch.isCurrent(myEpoch)) return false;
+        setState((s) => ({ ...s, running: false, error: UI_COPY.pipelineFailed }));
+        return false;
+      } finally {
+        if (runEpoch.current() === myEpoch) runInFlightRef.current = false;
       }
     },
-    [runStep]
+    [runEpoch, runStep]
   );
 
   const cancel = useCallback(() => {
-    abortRef.current = true;
+    runEpoch.cancel();
+    runInFlightRef.current = false;
     setState((s) => ({
       ...s,
       running: false,
       currentStep: null,
     }));
-  }, []);
+  }, [runEpoch]);
 
   return { ...state, run, cancel };
 }

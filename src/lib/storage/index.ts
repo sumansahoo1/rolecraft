@@ -11,6 +11,8 @@ export {
   clearExtractionJson,
   getPreferences,
   setPreferences,
+  getJdReaderFallbackEnabled,
+  setJdReaderFallbackEnabled,
   getAllStoredData,
   clearAll,
 } from './local';

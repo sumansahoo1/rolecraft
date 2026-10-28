@@ -13,7 +13,11 @@
     "lint": "eslint",
     "prepare": "husky",
     "sort-pkg": "sort-package-json package.json",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -51,6 +55,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "eslint-config-prettier": "^10.1.8",
@@ -62,7 +67,8 @@
     "prettier-plugin-tailwindcss": "^0.8.0",
     "sort-package-json": "^4.0.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -4,7 +4,7 @@ const steps = [
   {
     icon: Search,
     title: 'JD Analysis',
-    desc: 'Paste any job description — RoleCraft extracts key skills, requirements, and role context.',
+    desc: 'Paste a job description, or drop in a link to the posting — RoleCraft extracts key skills, requirements, and role context.',
   },
   {
     icon: GitBranch,
@@ -39,7 +39,7 @@ export default function Home() {
           </span>
         </h1>
         <p className="mt-4 max-w-xl text-lg text-zinc-600 dark:text-zinc-400">
-          Paste a job description. Get the perfect resume. Powered by AI.
+          Paste a job description or drop in a job link. Get the perfect resume. Powered by AI.
         </p>
         <div className="mt-8 flex gap-4">
           <a
@@ -84,7 +84,8 @@ export default function Home() {
       {/* CTA */}
       <section className="border-t border-zinc-200 px-6 py-16 text-center dark:border-zinc-800">
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Your data stays in your browser. API key stored locally. Nothing leaves your machine.
+          Your resume and API key stay in your browser. Job descriptions go to the AI provider you
+          choose and, for link imports, to the job board or the optional r.jina.ai reader.
         </p>
       </section>
     </div>
