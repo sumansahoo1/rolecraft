@@ -30,7 +30,82 @@ describe('GitHub summary validation', () => {
     });
     const result = validateGitHubSummary(raw, makeDataset());
     expect(result.summary.projectSpotlights.map((item) => item.repo)).toEqual(['octocat/alpha']);
-    expect(result.warnings.join(' ')).toContain('not in the fetched data');
+    expect(result.warnings.join(' ')).toContain('not among the analyzed projects');
+  });
+
+  it('grounds each spotlight against only that repository', () => {
+    const result = validateGitHubSummary(
+      makeSummary({
+        projectSpotlights: [
+          {
+            repo: 'octocat/alpha',
+            whatItIs: 'Alpha has 40 stars.',
+            technicalSignals: [],
+            whyItMatters: 'Another repository number.',
+          },
+          {
+            repo: 'octocat/alpha',
+            whatItIs: 'Alpha contributes to 162 analyzed stars.',
+            technicalSignals: [],
+            whyItMatters: 'An aggregate number.',
+          },
+          {
+            repo: 'octocat/alpha',
+            whatItIs: 'A TypeScript CLI with 120 stars and 10 forks.',
+            technicalSignals: ['3 sampled commits'],
+            whyItMatters: 'Grounded in its own repository metadata.',
+          },
+        ],
+      }),
+      makeDataset()
+    );
+
+    expect(result.summary.projectSpotlights).toEqual([
+      {
+        repo: 'octocat/alpha',
+        whatItIs: 'A TypeScript CLI with 120 stars and 10 forks.',
+        technicalSignals: ['3 sampled commits'],
+        whyItMatters: 'Grounded in its own repository metadata.',
+      },
+    ]);
+    expect(result.warnings.filter((warning) => warning.includes('project spotlight'))).toHaveLength(
+      2
+    );
+  });
+
+  it('only treats spotlights as structured repository references', () => {
+    const result = validateGitHubSummary(
+      makeSummary({
+        expertise: [
+          {
+            area: 'Open source collaboration',
+            evidence: ['Worked with octocat/unknown'],
+          },
+        ],
+      }),
+      makeDataset()
+    );
+
+    expect(result.summary.expertise).toEqual([
+      {
+        area: 'Open source collaboration',
+        evidence: ['Worked with octocat/unknown'],
+      },
+    ]);
+  });
+
+  it('grounds the sampled issue-authoring count', () => {
+    const base = makeDataset();
+    const dataset = {
+      ...base,
+      collaboration: { ...base.collaboration, issueAuthoringSampled: 37 },
+    };
+    const result = validateGitHubSummary(
+      makeSummary({ collaborationSignals: ['Authored 37 sampled issues.'] }),
+      dataset
+    );
+
+    expect(result.summary.collaborationSignals).toEqual(['Authored 37 sampled issues.']);
   });
 
   it('clamps and swaps timeline years to the fetched range', () => {

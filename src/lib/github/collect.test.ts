@@ -9,6 +9,7 @@ type Mode =
   | 'mid-run-401'
   | 'search-401'
   | 'search-401-limited'
+  | 'search-secondary-rate-limit'
   | 'search-failure'
   | 'language-failure'
   | 'zero-repos'
@@ -38,6 +39,25 @@ function text(body: string): Response {
     status: 200,
     headers: { 'content-type': 'text/plain', ...rateHeaders('core') },
   });
+}
+
+function secondaryRateLimit(): Response {
+  return new Response(
+    JSON.stringify({
+      message:
+        'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.',
+    }),
+    {
+      status: 403,
+      headers: {
+        'content-type': 'application/json',
+        'x-ratelimit-limit': '10',
+        'x-ratelimit-remaining': '1',
+        'x-ratelimit-reset': '1780000100',
+        'x-ratelimit-resource': 'search',
+      },
+    }
+  );
 }
 
 function repo(name: string, options: { fork?: boolean; language?: string; year?: number } = {}) {
@@ -165,6 +185,9 @@ function makeServer(mode: Mode = 'normal') {
     }
 
     if (url.pathname === '/search/issues') {
+      if (mode === 'search-secondary-rate-limit') {
+        return secondaryRateLimit();
+      }
       if (mode === 'search-failure') {
         return json({ message: 'search unavailable' }, 'search', 500);
       }
@@ -498,6 +521,28 @@ describe('collectGitHubWork', () => {
     expect(dataset.repos.length).toBeGreaterThan(0);
     expect(dataset.pullRequests).toEqual([]);
     expect(dataset.coverage.warnings.join(' ')).toContain('partial');
+    expect(
+      server.calls.filter((call) => new URL(call.url).pathname === '/search/issues')
+    ).toHaveLength(1);
+  });
+
+  it('treats a 403 secondary rate limit during search as a rate-limit interruption', async () => {
+    const server = makeServer('search-secondary-rate-limit');
+    const dataset = await collectGitHubWork({
+      username: 'octocat',
+      signal: new AbortController().signal,
+      fetchImpl: server.fetchImpl,
+      retryDelayMs: 0,
+      now: new Date('2026-06-01T00:00:00Z'),
+    });
+
+    expect(dataset.repos.length).toBeGreaterThan(0);
+    expect(dataset.coverage.searchIncomplete).toBe(true);
+    const warnings = dataset.coverage.warnings.join(' ');
+    expect(warnings).toContain('rate limit');
+    expect(warnings).toContain('resets at');
+    expect(warnings).toContain('GitHub token');
+    expect(warnings).not.toContain('Some GitHub search results could not be loaded');
     expect(
       server.calls.filter((call) => new URL(call.url).pathname === '/search/issues')
     ).toHaveLength(1);

@@ -200,6 +200,14 @@ function isHardRateLimitError(err: unknown): boolean {
   );
 }
 
+function rateLimitGuidance(mode: GitHubMode, err: unknown): string {
+  const reset =
+    isGitHubError(err) && err.resetAt ? ` GitHub's limit resets at ${err.resetAt}.` : '';
+  const tokenHint =
+    mode === 'anonymous' ? ' Add a GitHub token in Settings to raise GitHub rate limits.' : '';
+  return `${reset}${tokenHint}` || ' Wait a few minutes before retrying.';
+}
+
 function mapProfileError(err: unknown): GitHubError {
   if (isGitHubError(err)) {
     if (err.status === 404) {
@@ -769,8 +777,13 @@ export async function collectGitHubWork(options: CollectGitHubOptions): Promise<
             return;
           }
         }
-        if (isBudgetError(err) || isHardRateLimitError(err)) {
+        if (isBudgetError(err)) {
           warnings.push('The GitHub search request budget ran out; activity data is partial.');
+        } else if (isHardRateLimitError(err)) {
+          searchIncomplete = true;
+          warnings.push(
+            `GitHub hit a rate limit during search; activity data is partial.${rateLimitGuidance(mode, err)}`
+          );
         } else {
           warnings.push(
             'Some GitHub search results could not be loaded; activity data is partial.'
@@ -858,7 +871,12 @@ export async function collectGitHubWork(options: CollectGitHubOptions): Promise<
             warnings.push('The GitHub token was rejected during the commit fallback.');
             searchIncomplete = true;
           }
-        } else if (isBudgetError(err) || isHardRateLimitError(err)) {
+        } else if (isHardRateLimitError(err)) {
+          searchIncomplete = true;
+          warnings.push(
+            `GitHub hit a rate limit before older commits could be sampled.${rateLimitGuidance(mode, err)}`
+          );
+        } else if (isBudgetError(err)) {
           warnings.push('The GitHub search budget ran out before older commits could be sampled.');
         } else {
           warnings.push('Older commit samples could not be loaded.');

@@ -403,7 +403,7 @@ HARD GROUNDING RULES
 4. Distinguish owned repositories, forked repositories, and pull requests/issues to repositories owned by others. A pull request to a repository is not ownership and is not employment.
 5. Use repository full names exactly as provided. Never invent a repository, URL, technology, date, or number.
 6. Do not compute new totals, averages, percentages, or derived counts. Use the structured numbers provided in the dossier.
-7. Do not use numbers that appear only inside README text, repository descriptions, commit messages, PR/issue titles, or the profile README. The only derived cardinalities you may mention are: active-year span, project count, language count, active-year count, and external-repository count, when those values are present in the dossier.
+7. Do not use numbers that appear only inside README text, repository descriptions, commit messages, PR/issue titles, or the profile README. The only derived cardinalities you may mention are: active-year span, project count, language count, active-year count, and external-repository count, when those values are present in the dossier. Inside project spotlights, use only that repository's own metrics and dates; do not use derived cardinalities there.
 8. If evidence is thin or conflicting, say so in caveats. Do not pad.
 9. Write in the third person. Do not use first-person voice.
 10. Return ONLY a JSON object matching the schema below. No markdown fences, no prose outside JSON.

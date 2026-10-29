@@ -142,8 +142,12 @@ function httpError(status: number, headers: Headers, message: string): GitHubErr
   if (status === 403 || status === 429) {
     const remaining = headers.get('x-ratelimit-remaining');
     const retryAfter = headers.get('retry-after');
-    if (remaining === '0' || retryAfter != null || status === 429) {
-      const code = retryAfter != null || status === 429 ? 'SECONDARY_RATE_LIMITED' : 'RATE_LIMITED';
+    const secondaryMessage = /secondary rate limit|abuse detection/i.test(message);
+    if (secondaryMessage || remaining === '0' || retryAfter != null || status === 429) {
+      const code =
+        secondaryMessage || retryAfter != null || status === 429
+          ? 'SECONDARY_RATE_LIMITED'
+          : 'RATE_LIMITED';
       return new GitHubError(
         code,
         code === 'RATE_LIMITED'

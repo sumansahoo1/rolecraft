@@ -100,8 +100,8 @@ function ErrorCard({
           )}
           {isRateLimit && !hasToken && (
             <p className="text-muted-foreground mt-1 text-xs">
-              Anonymous GitHub access allows 60 core requests per hour. A token raises this to
-              5,000/hour.
+              Anonymous GitHub access allows 60 core requests per hour (search is a separate
+              10/minute bucket). A token raises the core limit to 5,000/hour.
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">

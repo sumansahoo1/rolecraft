@@ -144,6 +144,8 @@ export default function SettingsPage() {
       setGithubScopes(verification.scopes);
       toast.success(`GitHub token works for @${verification.login}`);
     } catch (err) {
+      setGithubLogin(null);
+      setGithubScopes(null);
       const message = err instanceof Error ? err.message : 'Unknown error';
       toast.error(`GitHub token verification failed: ${message}`);
     } finally {
@@ -222,9 +224,10 @@ export default function SettingsPage() {
                 </button>
               </div>
               <p className="text-muted-foreground text-xs">
-                Your resume and job descriptions are sent to the AI provider you choose. API keys
-                and resume data are stored in your browser. Job links may also contact the job board
-                or the optional r.jina.ai reader.
+                Your resume, job descriptions, and a compact dossier of GitHub profile data are sent
+                to the AI provider you choose. API keys, resume data, and the optional GitHub token
+                are stored only in your browser; the token is sent only to api.github.com. Job links
+                may also contact the job board or the optional r.jina.ai reader.
               </p>
             </div>
 
@@ -271,11 +274,11 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <p className="text-muted-foreground text-xs">
-              Anonymous GitHub API access is limited to 60 requests per hour. A personal access
-              token raises that to 5,000 requests/hour and allows deeper sampling. Use a
-              fine-grained token with public-repository read-only access, or a classic token with no
-              scopes. Avoid broad scopes such as <code>repo</code>, <code>user</code>, or{' '}
-              <code>admin:*</code>.
+              Anonymous GitHub API access allows 60 core requests/hour; search is a separate
+              10/minute bucket. A personal access token raises the core limit to 5,000 requests/hour
+              and allows deeper sampling. Use a fine-grained token with public-repository read-only
+              access, or a classic token with no scopes. Avoid broad scopes such as{' '}
+              <code>repo</code>, <code>user</code>, or <code>admin:*</code>.
             </p>
 
             <div className="flex flex-col gap-2">
@@ -290,6 +293,7 @@ export default function SettingsPage() {
                   className="pr-9"
                   autoComplete="off"
                   spellCheck={false}
+                  disabled={verifyingGithub}
                 />
                 <button
                   type="button"
@@ -334,7 +338,11 @@ export default function SettingsPage() {
                 )}
                 Verify token
               </Button>
-              <Button variant="ghost" onClick={handleRemoveGithubToken} disabled={!githubToken}>
+              <Button
+                variant="ghost"
+                onClick={handleRemoveGithubToken}
+                disabled={!githubToken || verifyingGithub}
+              >
                 <Trash2 className="mr-2 size-4" />
                 Remove
               </Button>

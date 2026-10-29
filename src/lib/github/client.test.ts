@@ -112,6 +112,46 @@ describe('GitHub client', () => {
     expect(vi.mocked(fetchImpl)).toHaveBeenCalledTimes(1);
   });
 
+  it('maps a 403 secondary rate limit without Retry-After from the body message', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(
+        {
+          message:
+            'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.',
+        },
+        {
+          status: 403,
+          headers: {
+            'x-ratelimit-remaining': '1',
+            'x-ratelimit-reset': '1780000900',
+            'x-ratelimit-resource': 'core',
+          },
+        }
+      )
+    ) as unknown as typeof fetch;
+    const github = client(fetchImpl);
+    await expect(github.requestJson('/user', 'core')).rejects.toMatchObject({
+      code: 'SECONDARY_RATE_LIMITED',
+      status: 403,
+      resetAt: new Date(1780000900 * 1000).toISOString(),
+    });
+    expect(vi.mocked(fetchImpl)).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps an abuse-detection 403 to a secondary rate limit', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(
+        { message: 'You have triggered an abuse detection mechanism. Please retry later.' },
+        { status: 403, headers: { 'x-ratelimit-remaining': '1' } }
+      )
+    ) as unknown as typeof fetch;
+    const github = client(fetchImpl);
+    await expect(github.requestJson('/user', 'core')).rejects.toMatchObject({
+      code: 'SECONDARY_RATE_LIMITED',
+      status: 403,
+    });
+  });
+
   it('retries one 5xx response on core requests', async () => {
     const fetchImpl = vi
       .fn()

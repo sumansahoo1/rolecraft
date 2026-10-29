@@ -1,4 +1,9 @@
-import type { GitHubDataset, GitHubSummaryValidation, GitHubWorkSummary } from '@/types';
+import type {
+  GitHubDataset,
+  GitHubProject,
+  GitHubSummaryValidation,
+  GitHubWorkSummary,
+} from '@/types';
 import { stripMarkdownToText } from './normalize';
 
 function asString(value: unknown, maxChars: number): string {
@@ -25,6 +30,41 @@ function addNumbersFromText(target: Set<number>, value: string): void {
     const number = Number(match[0]);
     if (Number.isFinite(number)) target.add(number);
   }
+}
+
+function addProjectNumbers(target: Set<number>, project: GitHubProject): void {
+  addAll(target, [
+    project.repo.stars,
+    project.repo.forks,
+    project.commitCountSampled,
+    ...project.languages.map((language) => language.percentage),
+  ]);
+  if (project.repo.createdAt) {
+    const year = new Date(project.repo.createdAt).getUTCFullYear();
+    if (!Number.isNaN(year)) target.add(year);
+  }
+  if (project.repo.pushedAt) {
+    const year = new Date(project.repo.pushedAt).getUTCFullYear();
+    if (!Number.isNaN(year)) target.add(year);
+  }
+  addNumbersFromText(target, project.repo.fullName);
+  for (const topic of project.repo.topics) addNumbersFromText(target, topic);
+}
+
+function addYearNumbers(target: Set<number>, dataset: GitHubDataset): void {
+  for (const row of dataset.timeline) target.add(row.year);
+  const { accountCreatedYear, firstActivityYear, lastActivityYear } = dataset.stats;
+  if (accountCreatedYear != null) target.add(accountCreatedYear);
+  if (firstActivityYear != null) target.add(firstActivityYear);
+  if (lastActivityYear != null) target.add(lastActivityYear);
+}
+
+function buildProjectAllowedNumbers(dataset: GitHubDataset, project: GitHubProject): Set<number> {
+  const allowed = new Set<number>();
+  addProjectNumbers(allowed, project);
+  // Years are generic timeline context, not another project's metrics.
+  addYearNumbers(allowed, dataset);
+  return allowed;
 }
 
 export function buildAllowedNumbers(dataset: GitHubDataset): Set<number> {
@@ -92,23 +132,7 @@ export function buildAllowedNumbers(dataset: GitHubDataset): Set<number> {
     ]);
   }
   for (const project of projects) {
-    addAll(allowed, [
-      project.repo.stars,
-      project.repo.forks,
-      project.commitCountSampled,
-      project.score,
-      ...project.languages.map((language) => language.percentage),
-    ]);
-    if (project.repo.createdAt) {
-      const year = new Date(project.repo.createdAt).getUTCFullYear();
-      if (!Number.isNaN(year)) allowed.add(year);
-    }
-    if (project.repo.pushedAt) {
-      const year = new Date(project.repo.pushedAt).getUTCFullYear();
-      if (!Number.isNaN(year)) allowed.add(year);
-    }
-    addNumbersFromText(allowed, project.repo.fullName);
-    for (const topic of project.repo.topics) addNumbersFromText(allowed, topic);
+    addProjectNumbers(allowed, project);
   }
   for (const repo of dataset.repos) {
     addNumbersFromText(allowed, repo.fullName);
@@ -117,6 +141,7 @@ export function buildAllowedNumbers(dataset: GitHubDataset): Set<number> {
   allowed.add(projects.length);
   allowed.add(Math.min(8, stats.topLanguages.length));
   allowed.add(collaboration.externalRepos.length);
+  allowed.add(collaboration.issueAuthoringSampled);
 
   return allowed;
 }
@@ -174,7 +199,7 @@ export function validateGitHubSummary(
   const warnings: string[] = [];
   const allowedNumbers = buildAllowedNumbers(dataset);
   const projectAllowlist = new Map(
-    dataset.projects.map((project) => [project.repo.fullName.toLowerCase(), project.repo.fullName])
+    dataset.projects.map((project) => [project.repo.fullName.toLowerCase(), project])
   );
   const years = dataset.timeline.map((row) => row.year);
   const minYear = years[0] ?? null;
@@ -248,10 +273,10 @@ export function validateGitHubSummary(
     for (const item of raw.projectSpotlights) {
       if (!isRecord(item)) continue;
       const requestedRepo = asString(item.repo, 160).toLowerCase();
-      const repo = projectAllowlist.get(requestedRepo);
-      if (!repo) {
+      const project = projectAllowlist.get(requestedRepo);
+      if (!project) {
         warnings.push(
-          'The AI referenced a repository that was not in the fetched data; it was removed.'
+          'The AI referenced a repository that was not among the analyzed projects; it was removed.'
         );
         continue;
       }
@@ -259,11 +284,21 @@ export function validateGitHubSummary(
       const technicalSignals = asStringArray(item.technicalSignals, 8, 220);
       const whyItMatters = asString(item.whyItMatters, 700);
       if (!whatItIs && !whyItMatters) continue;
-      if (!allGrounded([whatItIs, whyItMatters, ...technicalSignals], allowedNumbers)) {
+      if (
+        !allGrounded(
+          [whatItIs, whyItMatters, ...technicalSignals],
+          buildProjectAllowedNumbers(dataset, project)
+        )
+      ) {
         warnings.push('A project spotlight containing an unverified number was removed.');
         continue;
       }
-      projectSpotlights.push({ repo, whatItIs, technicalSignals, whyItMatters });
+      projectSpotlights.push({
+        repo: project.repo.fullName,
+        whatItIs,
+        technicalSignals,
+        whyItMatters,
+      });
       if (projectSpotlights.length >= 6) break;
     }
   }
