@@ -252,3 +252,7 @@ export interface StoredData {
 // ─── App Status ─────────────────────────────────────────────
 
 export type AppStatus = 'idle' | 'running' | 'paused' | 'complete' | 'error';
+
+// ─── Job Link Import ────────────────────────────────────────
+
+export type * from './jd-link';

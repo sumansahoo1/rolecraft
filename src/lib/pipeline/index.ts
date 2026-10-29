@@ -4,4 +4,5 @@ export { computeJaccardSimilarity, computeResumeTextSimilarity } from './similar
 export { checkAlgorithmicConvergence } from './convergence';
 export { extractRevisionReport } from './revision-parser';
 export { buildCritiqueContext, buildRevisionContext } from './context-builder';
+export { createRunEpoch } from './run-epoch';
 export * from './constants';

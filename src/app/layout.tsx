@@ -17,13 +17,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'RoleCraft — AI Resume Builder',
   description:
-    'Craft the perfect resume for any role. AI-powered JD analysis, experience mapping, resume generation, and critique loop.',
+    'Craft the perfect resume for any role. AI-powered JD analysis, experience mapping, resume generation, and critique loop. Job link import is supported.',
   keywords: [
     'resume',
     'AI resume builder',
     'job description analysis',
     'resume critique',
     'career',
+    'job link import',
+    'job posting URL',
   ],
 };
 
