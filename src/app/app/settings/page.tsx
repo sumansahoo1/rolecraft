@@ -222,8 +222,9 @@ export default function SettingsPage() {
                 </button>
               </div>
               <p className="text-muted-foreground text-xs">
-                Your key is stored locally in your browser. Nothing leaves your machine except
-                direct API calls to the provider.
+                Your resume and job descriptions are sent to the AI provider you choose. API keys
+                and resume data are stored in your browser. Job links may also contact the job board
+                or the optional r.jina.ai reader.
               </p>
             </div>
 

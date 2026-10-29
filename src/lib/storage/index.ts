@@ -15,6 +15,8 @@ export {
   clearGitHubToken,
   getPreferences,
   setPreferences,
+  getJdReaderFallbackEnabled,
+  setJdReaderFallbackEnabled,
   getAllStoredData,
   clearAll,
 } from './local';

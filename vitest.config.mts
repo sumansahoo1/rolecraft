@@ -15,7 +15,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/lib/github/**/*.ts'],
+      include: [
+        'src/lib/github/**/*.ts',
+        'src/lib/jd-link/**/*.ts',
+        'src/lib/pipeline/run-epoch.ts',
+      ],
       exclude: [
         '**/*.test.ts',
         'src/lib/github/__tests__/**',

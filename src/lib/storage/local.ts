@@ -1,9 +1,9 @@
 /**
  * Local storage utilities for RoleCraft.
  *
- * All user data (API key, master resume, preferences) is stored in the
- * browser's localStorage. Nothing is sent to any server — API calls go
- * directly from the browser to the AI provider.
+ * Data stays in the browser. Requests go directly to AI providers,
+ * ATS job-board APIs, and — only when the reader fallback is enabled —
+ * r.jina.ai.
  */
 
 import type { StoredData, Provider } from '@/types';
@@ -23,6 +23,7 @@ const KEYS = {
   githubToken: 'rolecraft_github_token',
 
   preferences: 'rolecraft_preferences',
+  jdReaderFallback: 'rolecraft_jd_reader_fallback',
 } as const;
 
 const API_KEY_KEYS: Record<Provider, string> = {
@@ -37,17 +38,21 @@ const API_KEY_KEYS: Record<Provider, string> = {
 
 export function getProvider(): Provider {
   if (typeof window === 'undefined') return 'deepseek';
-  const stored = localStorage.getItem(KEYS.provider);
-  if (
-    stored === 'deepseek' ||
-    stored === 'openai' ||
-    stored === 'anthropic' ||
-    stored === 'google' ||
-    stored === 'openrouter'
-  ) {
-    return stored;
+  try {
+    const stored = localStorage.getItem(KEYS.provider);
+    if (
+      stored === 'deepseek' ||
+      stored === 'openai' ||
+      stored === 'anthropic' ||
+      stored === 'google' ||
+      stored === 'openrouter'
+    ) {
+      return stored;
+    }
+    return 'deepseek';
+  } catch {
+    return 'deepseek';
   }
-  return 'deepseek';
 }
 
 export function setProvider(provider: Provider): void {
@@ -63,19 +68,23 @@ export function setProvider(provider: Provider): void {
 export function getProviderApiKey(provider: Provider): string | null {
   if (typeof window === 'undefined') return null;
 
-  const perProviderKey = localStorage.getItem(API_KEY_KEYS[provider]);
-  if (perProviderKey) return perProviderKey;
+  try {
+    const perProviderKey = localStorage.getItem(API_KEY_KEYS[provider]);
+    if (perProviderKey) return perProviderKey;
 
-  if (provider === 'deepseek') {
-    const legacyKey = localStorage.getItem(KEYS.apiKey);
-    if (legacyKey) {
-      localStorage.setItem(API_KEY_KEYS.deepseek, legacyKey);
-      localStorage.removeItem(KEYS.apiKey);
-      return legacyKey;
+    if (provider === 'deepseek') {
+      const legacyKey = localStorage.getItem(KEYS.apiKey);
+      if (legacyKey) {
+        localStorage.setItem(API_KEY_KEYS.deepseek, legacyKey);
+        localStorage.removeItem(KEYS.apiKey);
+        return legacyKey;
+      }
     }
-  }
 
-  return null;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export function getApiKey(provider?: Provider): string | null {
@@ -116,9 +125,9 @@ export function setModel(model: string): void {
 
 export function getExtractionJson(): Record<string, unknown> | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(KEYS.extractionJson);
-  if (!raw) return null;
   try {
+    const raw = localStorage.getItem(KEYS.extractionJson);
+    if (!raw) return null;
     return JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return null;
@@ -175,6 +184,26 @@ export function getPreferences(): StoredData['preferences'] | null {
 
 export function setPreferences(prefs: NonNullable<StoredData['preferences']>): void {
   localStorage.setItem(KEYS.preferences, JSON.stringify(prefs));
+}
+
+// ─── Job-link reader fallback ──────────────────────────────
+
+/**
+ * Defaults to enabled. Only an explicit stored 'false' disables it.
+ * Reads are guarded so private-mode/quota failures fall back to the default.
+ */
+export function getJdReaderFallbackEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return localStorage.getItem(KEYS.jdReaderFallback) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export function setJdReaderFallbackEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(KEYS.jdReaderFallback, enabled ? 'true' : 'false');
 }
 
 // ─── Bulk ───────────────────────────────────────────────────
