@@ -253,6 +253,32 @@ describe('fetchAtsJob — parsing', () => {
     expect(data.text.indexOf('Additional Information')).toBeLessThan(data.text.indexOf('About Us'));
   });
 
+  it('avoids duplicating Remote and empty location segments', async () => {
+    const data = await fetchAts(
+      'https://jobs.smartrecruiters.com/Acme/743999999999999-engineer',
+      jsonResponse({
+        name: 'Product Engineer',
+        remote: true,
+        location: { fullLocation: 'Remote, , OTHER' },
+        jobAd: { sections: { jobDescription: { text: '<p>Build things</p>' } } },
+      })
+    );
+    expect(data.location).toBe('Remote, OTHER');
+  });
+
+  it('prefixes Remote only when the location does not already say it', async () => {
+    const data = await fetchAts(
+      'https://jobs.smartrecruiters.com/Acme/743999999999999-engineer',
+      jsonResponse({
+        name: 'Product Engineer',
+        remote: true,
+        location: { city: 'Austin', region: '', country: 'US' },
+        jobAd: { sections: { jobDescription: { text: '<p>Build things</p>' } } },
+      })
+    );
+    expect(data.location).toBe('Remote · Austin, US');
+  });
+
   it('maps missing SmartRecruiters sections to empty_content', async () => {
     await expect(
       fetchAts(

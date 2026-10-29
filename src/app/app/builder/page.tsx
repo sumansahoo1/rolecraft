@@ -136,7 +136,10 @@ export default function BuilderPage() {
     if (!data) return;
     setLinkJd(data.text);
     setLastFetchedSourceUrl(data.sourceUrl);
-    if (data.truncated) toast.info(truncatedNote(MAX_JD_CHARS));
+    if (data.truncated) {
+      toast.info(truncatedNote(MAX_JD_CHARS));
+      return;
+    }
     if (data.quality === 'low_confidence') {
       toast.warning(UI_COPY.lowConfidence);
       return;

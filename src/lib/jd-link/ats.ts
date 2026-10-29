@@ -39,6 +39,15 @@ function nonEmpty(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+function cleanLocationText(value: string | null): string | null {
+  if (!value) return null;
+  const segments = value
+    .split(',')
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+  return segments.length > 0 ? segments.join(', ') : null;
+}
+
 // ─── Detection ──────────────────────────────────────────────
 
 const GREENHOUSE_BOARD_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
@@ -246,17 +255,18 @@ function parseSmartRecruiters(data: unknown): ParsedAtsJob | null {
   const company = asRecord(root.company);
   const location = asRecord(root.location);
 
-  let locationText = location ? nonEmpty(asString(location.fullLocation)) : null;
+  let locationText = location ? cleanLocationText(nonEmpty(asString(location.fullLocation))) : null;
   if (!locationText && location) {
     const pieces = [asString(location.city), asString(location.region), asString(location.country)]
       .map((piece) => nonEmpty(piece))
       .filter((piece): piece is string => piece !== null);
-    locationText = nonEmpty(pieces.join(', '));
+    locationText = cleanLocationText(pieces.join(', '));
   }
 
   const remote = root.remote === true || location?.remote === true;
   if (remote) {
-    locationText = locationText ? `Remote · ${locationText}` : 'Remote';
+    if (!locationText) locationText = 'Remote';
+    else if (!/remote/i.test(locationText)) locationText = `Remote · ${locationText}`;
   }
 
   return {

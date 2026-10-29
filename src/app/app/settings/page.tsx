@@ -126,7 +126,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-2">
             <Label htmlFor="api-key">
               API Key
-              <span className="ml-1 text-xs text-muted-foreground">({providerLabel})</span>
+              <span className="text-muted-foreground ml-1 text-xs">({providerLabel})</span>
             </Label>
             <div className="relative">
               <Input
@@ -141,15 +141,16 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowKey(!showKey)}
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
                 aria-label={showKey ? 'Hide key' : 'Show key'}
               >
                 {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Your key is stored locally in your browser. Nothing leaves your machine except direct
-              API calls to the provider.
+            <p className="text-muted-foreground text-xs">
+              Your resume and job descriptions are sent to the AI provider you choose. API keys and
+              resume data are stored in your browser. Job links may also contact the job board or
+              the optional r.jina.ai reader.
             </p>
           </div>
 
@@ -168,7 +169,7 @@ export default function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {models.find((o) => o.value === model)?.desc ??
                 'Select a model to see its description'}
             </p>

@@ -88,7 +88,7 @@ function mapTargetStatus(status: number, warning: string): ReaderTargetError {
       warning,
     };
   }
-  if (status === 401 || status === 403 || status === 451) {
+  if (status === 401 || status === 451) {
     return {
       code: 'blocked',
       status,
@@ -97,7 +97,7 @@ function mapTargetStatus(status: number, warning: string): ReaderTargetError {
       warning,
     };
   }
-  if (status === 429) {
+  if (status === 403 || status === 429) {
     return {
       code: 'blocked',
       status,
@@ -152,7 +152,9 @@ export async function fetchViaReader(
   });
 
   const { status } = response;
-  if (status === 429) throw new JdLinkError('reader_failed', { status, retryable: true });
+  if (status === 403 || status === 429) {
+    throw new JdLinkError('reader_failed', { status, retryable: true });
+  }
   if (!response.ok) {
     throw new JdLinkError('reader_failed', { status, retryable: status >= 500 });
   }

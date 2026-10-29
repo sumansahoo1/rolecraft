@@ -28,6 +28,12 @@ describe('parseJobUrl', () => {
     expect(expectOk('jobs.lever.co/acme/123').normalized).toBe('https://jobs.lever.co/acme/123');
   });
 
+  it('treats a bare host with :// in the query as a bare host', () => {
+    expect(expectOk('jobs.lever.co/acme/123?x=https://foo').normalized).toBe(
+      'https://jobs.lever.co/acme/123?x=https://foo'
+    );
+  });
+
   it('classifies host:port before schemes and rejects private hosts', () => {
     expectCode('localhost:3000/job', 'invalid_url');
     expect(expectOk('example.com:8080/job').normalized).toBe('https://example.com:8080/job');

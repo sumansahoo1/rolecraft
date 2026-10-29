@@ -138,7 +138,7 @@ describe('fetchViaReader — target warnings', () => {
     [404, 'not_found', false],
     [410, 'not_found', false],
     [401, 'blocked', false],
-    [403, 'blocked', false],
+    [403, 'blocked', true],
     [451, 'blocked', false],
     [429, 'blocked', true],
     [408, 'timeout', true],
@@ -285,12 +285,14 @@ describe('fetchViaReader — content type and bodies', () => {
 });
 
 describe('fetchViaReader — reader HTTP statuses', () => {
-  it('maps 429 to retryable reader_failed', async () => {
-    await expect(fetchVia(fetchReader('', { status: 429 }))).rejects.toMatchObject({
-      code: 'reader_failed',
-      retryable: true,
-      status: 429,
-    });
+  it('maps 403 and 429 to retryable reader_failed', async () => {
+    for (const status of [403, 429]) {
+      await expect(fetchVia(fetchReader('', { status }))).rejects.toMatchObject({
+        code: 'reader_failed',
+        retryable: true,
+        status,
+      });
+    }
   });
 
   it('maps 500 to retryable reader_failed', async () => {

@@ -84,8 +84,9 @@ export default function Home() {
       {/* CTA */}
       <section className="border-t border-zinc-200 px-6 py-16 text-center dark:border-zinc-800">
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Your resume and API key stay in your browser. Job descriptions go to the AI provider you
-          choose and, for link imports, to the job board or the optional r.jina.ai reader.
+          Your resume and API key are stored in your browser. Resumes and job descriptions go to the
+          AI provider you choose; link imports also contact the job board or the optional r.jina.ai
+          reader.
         </p>
       </section>
     </div>

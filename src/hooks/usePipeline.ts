@@ -11,6 +11,7 @@ import {
   RESUME_CRITIQUE_PROMPT,
   RESUME_SPEC_GENERATION_PROMPT,
 } from '@/lib/ai';
+import { describePipelineError } from '@/lib/ai/error-copy';
 import { getApiKey, getModel, getProvider } from '@/lib/storage';
 import {
   generateLatexSource,
@@ -500,7 +501,7 @@ export function usePipeline() {
       } catch (err) {
         console.error(err); // raw provider error: console only, never rendered
         if (!runEpoch.isCurrent(myEpoch)) return false;
-        setState((s) => ({ ...s, running: false, error: UI_COPY.pipelineFailed }));
+        setState((s) => ({ ...s, running: false, error: describePipelineError(err) }));
         return false;
       } finally {
         if (runEpoch.current() === myEpoch) runInFlightRef.current = false;

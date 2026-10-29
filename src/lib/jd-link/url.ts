@@ -8,6 +8,7 @@ const TRAILING_PUNCTUATION_RE = /[.,;:!?]+$/;
 const EMBEDDED_CREDENTIALS_RE = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/)?[^/?#\s]*@/;
 const HOST_PORT_RE = /^[^/?#\s]+:\d+(?:[/?#]|$)/;
 const SCHEME_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
+const SCHEME_WITH_SLASHES_RE = /^([a-z][a-z0-9+.-]*):\/\//i;
 
 /**
  * Strip chat/markdown punctuation around a URL. Documented limitation: a
@@ -138,9 +139,9 @@ export function parseJobUrl(input: string): ParsedJobUrl {
 
   let href = raw;
 
-  if (href.includes('://')) {
-    const colon = href.indexOf('://');
-    const scheme = href.slice(0, colon).toLowerCase();
+  const schemeMatch = SCHEME_WITH_SLASHES_RE.exec(href);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
     if (scheme !== 'http' && scheme !== 'https') {
       return { ok: false, code: 'unsupported_scheme' };
     }

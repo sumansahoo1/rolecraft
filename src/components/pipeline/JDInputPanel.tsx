@@ -137,6 +137,7 @@ export function JDInputPanel({
 
             <TabsContent value="paste" className="mt-2 flex min-h-0 flex-1 flex-col">
               <Textarea
+                aria-label="Job description"
                 placeholder="Paste the job description here..."
                 className="min-h-[160px] flex-1 resize-none font-mono text-sm"
                 value={manualJd}
@@ -370,6 +371,7 @@ export function JDInputPanel({
 
               {showLinkText && (
                 <Textarea
+                  aria-label="Fetched job description"
                   placeholder="Paste the job description here..."
                   className="mt-2 min-h-[160px] flex-1 resize-none font-mono text-sm"
                   value={linkJd}
