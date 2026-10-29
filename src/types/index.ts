@@ -253,6 +253,10 @@ export interface StoredData {
 
 export type AppStatus = 'idle' | 'running' | 'paused' | 'complete' | 'error';
 
+// ─── GitHub Work Summarizer ─────────────────────────────────
+
+export type * from './github';
+
 // ─── Job Link Import ────────────────────────────────────────
 
 export type * from './jd-link';

@@ -15,8 +15,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/lib/jd-link/**/*.ts', 'src/lib/pipeline/run-epoch.ts'],
-      exclude: ['**/*.test.ts'],
+      include: [
+        'src/lib/github/**/*.ts',
+        'src/lib/jd-link/**/*.ts',
+        'src/lib/pipeline/run-epoch.ts',
+      ],
+      exclude: [
+        '**/*.test.ts',
+        'src/lib/github/__tests__/**',
+        'src/lib/github/markdown-download.ts',
+      ],
     },
   },
 });

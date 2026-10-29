@@ -84,9 +84,10 @@ export default function Home() {
       {/* CTA */}
       <section className="border-t border-zinc-200 px-6 py-16 text-center dark:border-zinc-800">
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Your resume and API key are stored in your browser. Resumes and job descriptions go to the
-          AI provider you choose; link imports also contact the job board or the optional r.jina.ai
-          reader.
+          Your resume, job descriptions, and a compact dossier of GitHub profile data are sent to
+          the AI provider you choose. API keys, resume data, and the optional GitHub token are
+          stored in your browser; the token is sent only to api.github.com. Link imports may also
+          contact the job board or the optional r.jina.ai reader.
         </p>
       </section>
     </div>

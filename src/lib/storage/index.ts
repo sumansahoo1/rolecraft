@@ -1,5 +1,6 @@
 export {
   getApiKey,
+  getProviderApiKey,
   setApiKey,
   clearApiKey,
   getProvider,
@@ -9,6 +10,9 @@ export {
   getExtractionJson,
   setExtractionJson,
   clearExtractionJson,
+  getGitHubToken,
+  setGitHubToken,
+  clearGitHubToken,
   getPreferences,
   setPreferences,
   getJdReaderFallbackEnabled,

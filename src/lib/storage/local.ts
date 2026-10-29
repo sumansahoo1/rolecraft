@@ -20,6 +20,7 @@ const KEYS = {
   apiKey_openrouter: 'rolecraft_api_key_openrouter',
   model: 'rolecraft_model',
   extractionJson: 'rolecraft_extraction_json',
+  githubToken: 'rolecraft_github_token',
 
   preferences: 'rolecraft_preferences',
   jdReaderFallback: 'rolecraft_jd_reader_fallback',
@@ -60,34 +61,40 @@ export function setProvider(provider: Provider): void {
 
 // ─── API Key (per-provider + legacy compat) ───────────────────
 
-export function getApiKey(provider?: Provider): string | null {
+/**
+ * Provider-scoped key read. For DeepSeek only, migrate the legacy generic
+ * key on first use. Other providers never inherit a DeepSeek legacy key.
+ */
+export function getProviderApiKey(provider: Provider): string | null {
   if (typeof window === 'undefined') return null;
 
   try {
-    // If a specific provider is requested, read its per-provider key
-    if (provider) {
-      return localStorage.getItem(API_KEY_KEYS[provider]);
-    }
-
-    // No provider specified: read currently-selected provider's key
-    const currentProvider = getProvider();
-    const perProviderKey = localStorage.getItem(API_KEY_KEYS[currentProvider]);
+    const perProviderKey = localStorage.getItem(API_KEY_KEYS[provider]);
     if (perProviderKey) return perProviderKey;
 
-    // Backward compat: check legacy key and migrate it
-    const legacyKey = localStorage.getItem(KEYS.apiKey);
-    if (legacyKey) {
-      // Migrate to deepseek (the only provider that existed before multi-provider)
-      localStorage.setItem(API_KEY_KEYS.deepseek, legacyKey);
-      // Clear the legacy key so we don't keep migrating
-      localStorage.removeItem(KEYS.apiKey);
-      return legacyKey;
+    if (provider === 'deepseek') {
+      const legacyKey = localStorage.getItem(KEYS.apiKey);
+      if (legacyKey) {
+        localStorage.setItem(API_KEY_KEYS.deepseek, legacyKey);
+        localStorage.removeItem(KEYS.apiKey);
+        return legacyKey;
+      }
     }
 
     return null;
   } catch {
     return null;
   }
+}
+
+export function getApiKey(provider?: Provider): string | null {
+  if (typeof window === 'undefined') return null;
+
+  // If a specific provider is requested, read its per-provider key.
+  if (provider) return getProviderApiKey(provider);
+
+  // No provider specified: read the currently-selected provider's key.
+  return getProviderApiKey(getProvider());
 }
 
 export function setApiKey(key: string, provider?: Provider): void {
@@ -133,6 +140,33 @@ export function setExtractionJson(json: Record<string, unknown>): void {
 
 export function clearExtractionJson(): void {
   localStorage.removeItem(KEYS.extractionJson);
+}
+
+// ─── GitHub token ───────────────────────────────────────────
+
+export function getGitHubToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const token = localStorage.getItem(KEYS.githubToken)?.trim();
+    return token || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setGitHubToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = token.trim();
+  if (!trimmed) {
+    localStorage.removeItem(KEYS.githubToken);
+    return;
+  }
+  localStorage.setItem(KEYS.githubToken, trimmed);
+}
+
+export function clearGitHubToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(KEYS.githubToken);
 }
 
 // ─── Preferences ────────────────────────────────────────────
