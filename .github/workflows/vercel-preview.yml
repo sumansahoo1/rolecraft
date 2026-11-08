@@ -1,0 +1,98 @@
+name: Vercel preview on comment
+
+# Deploys a preview build of a pull request branch when a trusted user comments
+# `/vercel-deploy` on that pull request. Git-triggered preview deployments are
+# disabled in vercel.json, so this workflow (or a manual CLI deploy) replaces them.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: vercel-preview-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    if: >-
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '/vercel-deploy') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Acknowledge comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: "eyes",
+            });
+
+      - name: Resolve pull request head
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput("sha", data.head.sha);
+            core.setOutput("ref", data.head.ref);
+
+      - name: Checkout pull request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy preview
+        id: deploy
+        run: |
+          url="$(vercel deploy --yes --token="${{ secrets.VERCEL_TOKEN }}")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+          PREVIEW_REF: ${{ steps.pr.outputs.ref }}
+          PREVIEW_SHA: ${{ steps.pr.outputs.sha }}
+        with:
+          script: |
+            const url = process.env.PREVIEW_URL;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                `Preview deployment for \`${process.env.PREVIEW_REF}\` (${process.env.PREVIEW_SHA.slice(0, 7)})`,
+                "",
+                url,
+              ].join("\n"),
+            });
+
+      - name: Fail loudly if deploy returned no URL
+        if: steps.deploy.outputs.url == ''
+        run: |
+          echo "Vercel CLI returned an empty URL. Check the deploy step logs."
+          exit 1

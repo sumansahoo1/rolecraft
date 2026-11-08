@@ -12,7 +12,7 @@ import {
   RESUME_SPEC_GENERATION_PROMPT,
 } from '@/lib/ai';
 import { describePipelineError } from '@/lib/ai/error-copy';
-import { getApiKey, getModel, getProvider } from '@/lib/storage';
+import { getApiKey, getExtractionJson, getModel, getProvider } from '@/lib/storage';
 import {
   generateLatexSource,
   getLatexEngine,
@@ -57,6 +57,7 @@ export interface PipelineState {
   bestResume: string | null;
   bestScore: number;
   convergenceResult: ConvergenceResult | null;
+  resumeEdited: boolean;
   // LaTeX pipeline fields
   resumeSpec: ResumeSpec | null;
   latexSource: string | null;
@@ -80,6 +81,7 @@ export function usePipeline() {
     bestResume: null,
     bestScore: 0,
     convergenceResult: null,
+    resumeEdited: false,
     resumeSpec: null,
     latexSource: null,
     latexHtmlBlob: null,
@@ -177,6 +179,7 @@ export function usePipeline() {
             bestResume: null,
             bestScore: 0,
             convergenceResult: null,
+            resumeEdited: false,
             resumeSpec: null,
             latexSource: null,
             latexHtmlBlob: null,
@@ -520,5 +523,146 @@ export function usePipeline() {
     }));
   }, [runEpoch]);
 
-  return { ...state, run, cancel };
+  const updateResume = useCallback((resumeText: string) => {
+    setState((s) => ({
+      ...s,
+      currentResume: resumeText,
+      bestResume: resumeText,
+      resumeEdited: true,
+    }));
+  }, []);
+
+  const rebuildLatex = useCallback(
+    async (resumeText: string) => {
+      const analysis = state.analysis;
+      if (!analysis) {
+        setState((s) => ({ ...s, error: 'Cannot rebuild LaTeX without a job analysis.' }));
+        return;
+      }
+
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        setState((s) => ({ ...s, error: UI_COPY.missingApiKey }));
+        return;
+      }
+
+      if (runInFlightRef.current) return;
+      const myEpoch = runEpoch.begin();
+
+      const setStateIfCurrent = (update: (s: PipelineState) => PipelineState): boolean => {
+        if (!runEpoch.isCurrent(myEpoch)) return false;
+        setState(update);
+        return true;
+      };
+
+      setState((s) => ({
+        ...s,
+        running: true,
+        currentStep: 'resume-spec',
+        error: null,
+        currentResume: resumeText,
+        latexVerification: null,
+      }));
+
+      try {
+        runInFlightRef.current = true;
+
+        const specRaw = await runStep(
+          'resume-spec',
+          `Target Role: ${analysis.roleTitle}\n\nConvert this resume into the structured format:\n\n${resumeText}`
+        );
+        if (!runEpoch.isCurrent(myEpoch)) return;
+
+        let resumeSpec: ResumeSpec;
+        try {
+          resumeSpec = extractJsonFromLLMResponse(specRaw) as ResumeSpec;
+        } catch {
+          setStateIfCurrent((s) => ({
+            ...s,
+            running: false,
+            currentStep: null,
+            error:
+              'Failed to parse ResumeSpec from AI response. Your edited text is still available.',
+          }));
+          return;
+        }
+
+        const resumeData = getExtractionJson() ?? {};
+        resumeSpec.meta = {
+          ...resumeSpec.meta,
+          name: (resumeData.name as string) || resumeSpec.meta.name,
+          email: (resumeData.email as string) || resumeSpec.meta.email,
+          phone: (resumeData.phone as string) || resumeSpec.meta.phone || undefined,
+          linkedin: (resumeData.linkedin as string) || resumeSpec.meta.linkedin || undefined,
+          github: (resumeData.github as string) || resumeSpec.meta.github || undefined,
+          twitter: (resumeData.twitter as string) || resumeSpec.meta.twitter || undefined,
+          portfolio: (resumeData.portfolio as string) || resumeSpec.meta.portfolio || undefined,
+        };
+
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            currentStep: 'latex-generation',
+            resumeSpec,
+          }))
+        ) {
+          return;
+        }
+
+        const latexSource = generateLatexSource(resumeSpec);
+        if (!runEpoch.isCurrent(myEpoch)) return;
+
+        if (
+          !setStateIfCurrent((s) => ({
+            ...s,
+            currentStep: 'latex-verification',
+            latexSource,
+          }))
+        ) {
+          return;
+        }
+
+        const engine = getLatexEngine();
+        await engine.init();
+        const compileResult = await engine.compile(resumeSpec);
+        if (!runEpoch.isCurrent(myEpoch)) return;
+
+        let latexHtmlBlob: Blob | null = null;
+        if (compileResult.success && engine.htmlPreviewBlob) {
+          latexHtmlBlob = engine.htmlPreviewBlob;
+        }
+
+        const shrinkResult = await shrinkSpecToFit(resumeSpec);
+        if (!runEpoch.isCurrent(myEpoch)) return;
+        if (shrinkResult.level > 0) {
+          resumeSpec = shrinkResult.spec;
+        }
+
+        const latexVerification = buildLatexVerificationResult(resumeSpec, shrinkResult);
+
+        setStateIfCurrent((s) => ({
+          ...s,
+          running: false,
+          currentStep: null,
+          latexSource,
+          latexHtmlBlob,
+          latexVerification,
+          resumeSpec,
+        }));
+      } catch (err) {
+        if (!runEpoch.isCurrent(myEpoch)) return;
+        setState((s) => ({
+          ...s,
+          running: false,
+          currentStep: null,
+          error: describePipelineError(err),
+        }));
+      } finally {
+        if (runEpoch.current() === myEpoch) runInFlightRef.current = false;
+      }
+    },
+    [runEpoch, runStep, state.analysis]
+  );
+
+  return { ...state, run, cancel, updateResume, rebuildLatex };
 }

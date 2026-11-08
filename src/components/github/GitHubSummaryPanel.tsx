@@ -27,6 +27,10 @@ async function copyText(text: string): Promise<void> {
   }
 }
 
+function formatProjectBullets(item: { repo: string; bullets: Array<{ text: string }> }): string {
+  return [`${item.repo} -`, ...item.bullets.map((bullet) => `- ${bullet.text}`)].join('\n');
+}
+
 export function GitHubSummaryPanel({
   dataset,
   summary,
@@ -153,44 +157,132 @@ export function GitHubSummaryPanel({
             </section>
           )}
 
-          {summary.projectSpotlights.length > 0 && (
+          {summary.projectHighlights.length > 0 && (
             <section>
-              <h3 className="mb-2 text-sm font-semibold">Project spotlights</h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                {summary.projectSpotlights.map((item) => {
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Resume bullets by project</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    copyText(
+                      summary.projectHighlights
+                        .map((item) => formatProjectBullets(item))
+                        .join('\n\n')
+                    )
+                  }
+                >
+                  <Copy className="mr-1.5 size-3.5" />
+                  Copy all
+                </Button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {summary.projectHighlights.map((item) => {
                   const project = dataset.projects.find(
                     (project) => project.repo.fullName === item.repo
                   );
                   return (
                     <Card key={item.repo} size="sm">
                       <CardHeader>
-                        <CardTitle>
-                          {project ? (
-                            <a
-                              href={project.repo.htmlUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="hover:underline"
-                            >
-                              {item.repo}
-                            </a>
-                          ) : (
-                            item.repo
-                          )}
-                        </CardTitle>
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle>
+                            {project ? (
+                              <a
+                                href={project.repo.htmlUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:underline"
+                              >
+                                {item.repo}
+                              </a>
+                            ) : (
+                              item.repo
+                            )}
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Copy ${item.repo} bullets`}
+                            onClick={() => copyText(formatProjectBullets(item))}
+                          >
+                            <Copy />
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent className="text-sm">
-                        <p>{item.whatItIs}</p>
-                        {item.technicalSignals.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {item.technicalSignals.map((signal) => (
-                              <Badge key={signal} variant="outline">
-                                {signal}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <p className="text-muted-foreground mt-2 text-xs">{item.whyItMatters}</p>
+                        {item.overview && <p className="text-muted-foreground">{item.overview}</p>}
+                        <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                          {item.bullets.map((bullet) => (
+                            <li key={bullet.text}>{bullet.text}</li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {summary.openSourceHighlights.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Open-source resume bullets</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    copyText(
+                      summary.openSourceHighlights
+                        .map((item) => formatProjectBullets(item))
+                        .join('\n\n')
+                    )
+                  }
+                >
+                  <Copy className="mr-1.5 size-3.5" />
+                  Copy all
+                </Button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {summary.openSourceHighlights.map((item) => {
+                  const repo = dataset.collaboration.externalRepos.find(
+                    (entry) => entry.fullName === item.repo
+                  );
+                  return (
+                    <Card key={item.repo} size="sm">
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle>
+                            {repo ? (
+                              <a
+                                href={`https://github.com/${repo.fullName}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:underline"
+                              >
+                                {item.repo}
+                              </a>
+                            ) : (
+                              item.repo
+                            )}
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Copy ${item.repo} bullets`}
+                            onClick={() => copyText(formatProjectBullets(item))}
+                          >
+                            <Copy />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="text-sm">
+                        {item.overview && <p className="text-muted-foreground">{item.overview}</p>}
+                        <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                          {item.bullets.map((bullet) => (
+                            <li key={bullet.text}>{bullet.text}</li>
+                          ))}
+                        </ul>
                       </CardContent>
                     </Card>
                   );
@@ -224,7 +316,7 @@ export function GitHubSummaryPanel({
           {summary.resumeBullets.length > 0 && (
             <section>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Suggested resume bullets</h3>
+                <h3 className="text-sm font-semibold">Additional resume bullets</h3>
                 <Button
                   variant="ghost"
                   size="sm"
