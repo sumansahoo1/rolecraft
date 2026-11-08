@@ -1,9 +1,9 @@
 /**
  * Local storage utilities for RoleCraft.
  *
- * All user data (API key, master resume, preferences) is stored in the
- * browser's localStorage. Nothing is sent to any server — API calls go
- * directly from the browser to the AI provider.
+ * Data stays in the browser. Requests go directly to AI providers,
+ * ATS job-board APIs, and — only when the reader fallback is enabled —
+ * r.jina.ai.
  */
 
 import type { StoredData, Provider } from '@/types';
@@ -20,8 +20,10 @@ const KEYS = {
   apiKey_openrouter: 'rolecraft_api_key_openrouter',
   model: 'rolecraft_model',
   extractionJson: 'rolecraft_extraction_json',
+  githubToken: 'rolecraft_github_token',
 
   preferences: 'rolecraft_preferences',
+  jdReaderFallback: 'rolecraft_jd_reader_fallback',
 } as const;
 
 const API_KEY_KEYS: Record<Provider, string> = {
@@ -36,17 +38,21 @@ const API_KEY_KEYS: Record<Provider, string> = {
 
 export function getProvider(): Provider {
   if (typeof window === 'undefined') return 'deepseek';
-  const stored = localStorage.getItem(KEYS.provider);
-  if (
-    stored === 'deepseek' ||
-    stored === 'openai' ||
-    stored === 'anthropic' ||
-    stored === 'google' ||
-    stored === 'openrouter'
-  ) {
-    return stored;
+  try {
+    const stored = localStorage.getItem(KEYS.provider);
+    if (
+      stored === 'deepseek' ||
+      stored === 'openai' ||
+      stored === 'anthropic' ||
+      stored === 'google' ||
+      stored === 'openrouter'
+    ) {
+      return stored;
+    }
+    return 'deepseek';
+  } catch {
+    return 'deepseek';
   }
-  return 'deepseek';
 }
 
 export function setProvider(provider: Provider): void {
@@ -55,30 +61,40 @@ export function setProvider(provider: Provider): void {
 
 // ─── API Key (per-provider + legacy compat) ───────────────────
 
+/**
+ * Provider-scoped key read. For DeepSeek only, migrate the legacy generic
+ * key on first use. Other providers never inherit a DeepSeek legacy key.
+ */
+export function getProviderApiKey(provider: Provider): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const perProviderKey = localStorage.getItem(API_KEY_KEYS[provider]);
+    if (perProviderKey) return perProviderKey;
+
+    if (provider === 'deepseek') {
+      const legacyKey = localStorage.getItem(KEYS.apiKey);
+      if (legacyKey) {
+        localStorage.setItem(API_KEY_KEYS.deepseek, legacyKey);
+        localStorage.removeItem(KEYS.apiKey);
+        return legacyKey;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function getApiKey(provider?: Provider): string | null {
   if (typeof window === 'undefined') return null;
 
-  // If a specific provider is requested, read its per-provider key
-  if (provider) {
-    return localStorage.getItem(API_KEY_KEYS[provider]);
-  }
+  // If a specific provider is requested, read its per-provider key.
+  if (provider) return getProviderApiKey(provider);
 
-  // No provider specified: read currently-selected provider's key
-  const currentProvider = getProvider();
-  const perProviderKey = localStorage.getItem(API_KEY_KEYS[currentProvider]);
-  if (perProviderKey) return perProviderKey;
-
-  // Backward compat: check legacy key and migrate it
-  const legacyKey = localStorage.getItem(KEYS.apiKey);
-  if (legacyKey) {
-    // Migrate to deepseek (the only provider that existed before multi-provider)
-    localStorage.setItem(API_KEY_KEYS.deepseek, legacyKey);
-    // Clear the legacy key so we don't keep migrating
-    localStorage.removeItem(KEYS.apiKey);
-    return legacyKey;
-  }
-
-  return null;
+  // No provider specified: read the currently-selected provider's key.
+  return getProviderApiKey(getProvider());
 }
 
 export function setApiKey(key: string, provider?: Provider): void {
@@ -109,9 +125,9 @@ export function setModel(model: string): void {
 
 export function getExtractionJson(): Record<string, unknown> | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(KEYS.extractionJson);
-  if (!raw) return null;
   try {
+    const raw = localStorage.getItem(KEYS.extractionJson);
+    if (!raw) return null;
     return JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return null;
@@ -124,6 +140,33 @@ export function setExtractionJson(json: Record<string, unknown>): void {
 
 export function clearExtractionJson(): void {
   localStorage.removeItem(KEYS.extractionJson);
+}
+
+// ─── GitHub token ───────────────────────────────────────────
+
+export function getGitHubToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const token = localStorage.getItem(KEYS.githubToken)?.trim();
+    return token || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setGitHubToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = token.trim();
+  if (!trimmed) {
+    localStorage.removeItem(KEYS.githubToken);
+    return;
+  }
+  localStorage.setItem(KEYS.githubToken, trimmed);
+}
+
+export function clearGitHubToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(KEYS.githubToken);
 }
 
 // ─── Preferences ────────────────────────────────────────────
@@ -141,6 +184,26 @@ export function getPreferences(): StoredData['preferences'] | null {
 
 export function setPreferences(prefs: NonNullable<StoredData['preferences']>): void {
   localStorage.setItem(KEYS.preferences, JSON.stringify(prefs));
+}
+
+// ─── Job-link reader fallback ──────────────────────────────
+
+/**
+ * Defaults to enabled. Only an explicit stored 'false' disables it.
+ * Reads are guarded so private-mode/quota failures fall back to the default.
+ */
+export function getJdReaderFallbackEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return localStorage.getItem(KEYS.jdReaderFallback) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export function setJdReaderFallbackEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(KEYS.jdReaderFallback, enabled ? 'true' : 'false');
 }
 
 // ─── Bulk ───────────────────────────────────────────────────

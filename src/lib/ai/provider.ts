@@ -13,6 +13,9 @@ export interface ChatCompletionOptions {
   apiKey: string;
   temperature?: number;
   maxTokens?: number;
+  signal?: AbortSignal;
+  /** Override retry backoff (useful for tests). */
+  retryDelayMs?: number;
 }
 
 export interface ChatCompletionResult {
@@ -303,21 +306,24 @@ export async function createChatCompletion(
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (opts.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: config.headers(opts.apiKey),
         body: JSON.stringify(body),
+        signal: opts.signal,
       });
 
       if (!res.ok) {
         const status = res.status;
         if (RETRYABLE_STATUSES.has(status) && attempt < MAX_RETRIES) {
-          const delay = RETRY_DELAYS_MS[attempt];
+          const delay = opts.retryDelayMs ?? RETRY_DELAYS_MS[attempt];
           console.warn(
             `${opts.provider} ${status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`
           );
-          await sleep(delay);
+          await sleep(delay, opts.signal);
           continue;
         }
         const err = await res.text();
@@ -344,13 +350,16 @@ export async function createChatCompletion(
 
       return result;
     } catch (err) {
+      if (opts.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+        throw err;
+      }
       if (err instanceof TypeError && attempt < MAX_RETRIES) {
         // Network errors (DNS failure, connection refused, etc.) are retryable
-        const delay = RETRY_DELAYS_MS[attempt];
+        const delay = opts.retryDelayMs ?? RETRY_DELAYS_MS[attempt];
         console.warn(
           `Network error, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES}): ${(err as Error).message}`
         );
-        await sleep(delay);
+        await sleep(delay, opts.signal);
         lastError = err as Error;
         continue;
       }

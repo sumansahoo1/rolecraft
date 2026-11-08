@@ -3,12 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Play, Square, FileText, AlertTriangle, Copy } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { FileText, Copy } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PipelineProgress } from '@/components/pipeline/PipelineProgress';
 import { JDAnalysisPanel } from '@/components/pipeline/JDAnalysisPanel';
@@ -16,8 +13,19 @@ import { ExperienceMappingPanel } from '@/components/pipeline/ExperienceMappingP
 import { ResumeDisplay } from '@/components/pipeline/ResumeDisplay';
 import { CritiquePanel } from '@/components/pipeline/CritiquePanel';
 import VerificationPanel from '@/components/pipeline/VerificationPanel';
+import { JDInputPanel } from '@/components/pipeline/JDInputPanel';
 import { usePipeline } from '@/hooks/usePipeline';
-import { getApiKey, getExtractionJson } from '@/lib/storage';
+import { useJobDescriptionFetch } from '@/hooks/useJobDescriptionFetch';
+import {
+  getApiKey,
+  getExtractionJson,
+  getJdReaderFallbackEnabled,
+  setJdReaderFallbackEnabled,
+} from '@/lib/storage';
+import { MAX_JD_CHARS } from '@/lib/jd-link/constants';
+import { UI_COPY, truncatedNote } from '@/lib/jd-link/messages';
+import { isStaleFetchedLink, parseJobUrl } from '@/lib/jd-link/url';
+import type { JdInputMode, StartBlockedReason } from '@/types';
 
 import { copyToClipboard } from '@/lib/export';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -34,46 +42,149 @@ Requirements:
 - Understanding of web performance optimization
 - Nice to have: Next.js, GraphQL, design systems`;
 
+interface StartPipelineOptions {
+  navigate: boolean;
+}
+
 export default function BuilderPage() {
   const router = useRouter();
   const pipeline = usePipeline();
-  const [jd, setJd] = useState('');
+  const jobFetch = useJobDescriptionFetch();
+  const [mode, setMode] = useState<JdInputMode>('paste');
+  const [manualJd, setManualJd] = useState('');
+  const [linkJd, setLinkJd] = useState('');
+  const [link, setLink] = useState('');
+  const [autoRun, setAutoRun] = useState(true);
+  const [readerEnabled, setReaderEnabled] = useState(true);
+  const [lastFetchedSourceUrl, setLastFetchedSourceUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('analysis');
   const [userPickedTab, setUserPickedTab] = useState(false);
   const [resumeLoaded, setResumeLoaded] = useState(false);
+  const [startBlocked, setStartBlocked] = useState<StartBlockedReason | null>(null);
 
   useEffect(() => {
     const extractionJson = getExtractionJson();
-    if (extractionJson) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setResumeLoaded(true);
-    } else {
-      toast.error('No master resume found. Add one first.');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResumeLoaded(true);
+    if (!extractionJson) {
+      toast.error(UI_COPY.noResume);
       router.push('/app/resume');
     }
   }, [router]);
 
-  const handleRun = () => {
-    if (!jd.trim()) {
-      toast.error('Paste a job description first');
-      return;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReaderEnabled(getJdReaderFallbackEnabled());
+  }, []);
+
+  const linkStale = linkJd.trim().length > 0 && isStaleFetchedLink(link, lastFetchedSourceUrl);
+
+  const startPipeline = async (
+    text: string,
+    { navigate }: StartPipelineOptions
+  ): Promise<boolean> => {
+    setStartBlocked(null);
+
+    if (!text.trim()) {
+      toast.error(UI_COPY.pasteJdFirst);
+      return false;
+    }
+    if (text.length > MAX_JD_CHARS) {
+      toast.error(UI_COPY.jdTooLong);
+      return false;
+    }
+    if (pipeline.running) {
+      toast.error(UI_COPY.waitForRun);
+      return false;
     }
     const extractionJson = getExtractionJson();
     if (!extractionJson) {
-      toast.error('No master resume found. Add one first.');
-      router.push('/app/resume');
-      return;
+      if (navigate) {
+        toast.error(UI_COPY.noResume);
+        router.push('/app/resume');
+      } else {
+        setStartBlocked('no_resume');
+      }
+      return false;
     }
     const apiKey = getApiKey();
     if (!apiKey) {
-      toast.error('Set your DeepSeek API key in Settings first');
-      router.push('/app/settings');
-      return;
+      if (navigate) {
+        toast.error(UI_COPY.missingApiKey);
+        router.push('/app/settings');
+      } else {
+        setStartBlocked('no_api_key');
+      }
+      return false;
     }
-
     setActiveTab('analysis');
     setUserPickedTab(false);
-    pipeline.run(jd, extractionJson);
+    return await pipeline.run(text, extractionJson);
+  };
+
+  const handleRun = () => {
+    const activeJd = mode === 'paste' ? manualJd : linkJd;
+    if (!activeJd.trim()) {
+      toast.error(mode === 'paste' ? UI_COPY.pasteJdFirst : UI_COPY.fetchLinkFirst);
+      return;
+    }
+    void startPipeline(activeJd, { navigate: mode === 'paste' });
+  };
+
+  const loadJob = async (input: string, allowReader: boolean, attemptedUrl: string) => {
+    const data = await jobFetch.fetchJob(input, { allowReader, attemptedUrl });
+    if (!data) return;
+    setLinkJd(data.text);
+    setLastFetchedSourceUrl(data.sourceUrl);
+    if (data.truncated) {
+      toast.info(truncatedNote(MAX_JD_CHARS));
+      return;
+    }
+    if (data.quality === 'low_confidence') {
+      toast.warning(UI_COPY.lowConfidence);
+      return;
+    }
+    if (data.warnings.length > 0) {
+      toast.warning(UI_COPY.fetchedWithWarnings);
+      return;
+    }
+    if (autoRun && !pipeline.running) {
+      await startPipeline(data.text, { navigate: false });
+    }
+  };
+
+  const handleFetchLink = () => {
+    if (pipeline.running || jobFetch.status === 'fetching') return;
+    if (!link.trim()) {
+      toast.error(UI_COPY.pasteLinkFirst);
+      return;
+    }
+    setStartBlocked(null);
+    const parsed = parseJobUrl(link);
+    const attemptedUrl = parsed.ok ? parsed.normalized : link.trim();
+    void loadJob(link, readerEnabled, attemptedUrl);
+  };
+
+  const handleRetryWithReader = () => {
+    if (pipeline.running || jobFetch.status === 'fetching') return;
+    setReaderEnabled(true);
+    try {
+      setJdReaderFallbackEnabled(true);
+    } catch {
+      toast.error(UI_COPY.preferenceSaveFailed);
+    }
+    const parsed = parseJobUrl(link);
+    const attemptedUrl = parsed.ok ? parsed.normalized : link.trim();
+    void loadJob(link, true, attemptedUrl); // explicit true avoids stale state
+  };
+
+  const handleReaderEnabledChange = (next: boolean) => {
+    setReaderEnabled(next);
+    try {
+      setJdReaderFallbackEnabled(next);
+    } catch {
+      toast.error(UI_COPY.preferenceSaveFailed);
+    }
   };
 
   const pipelineDone = !pipeline.running && pipeline.currentResume != null;
@@ -102,70 +213,35 @@ export default function BuilderPage() {
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: JD Input */}
-      <div className="flex w-80 shrink-0 flex-col border-r p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Job Description</h2>
-          {resumeLoaded && (
-            <Badge variant="secondary" className="text-xs">
-              Resume loaded
-            </Badge>
-          )}
-        </div>
-
-        {!resumeLoaded ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 py-8">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </CardContent>
-          </Card>
-        ) : !getExtractionJson() ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 py-8">
-              <AlertTriangle className="size-6 text-yellow-600" />
-              <p className="text-center text-sm text-muted-foreground">
-                No master resume found. Add your resume first to start building.
-              </p>
-              <Button variant="outline" size="sm" onClick={() => router.push('/app/resume')}>
-                <FileText className="mr-1.5 size-3.5" />
-                Add Master Resume
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <Textarea
-              placeholder="Paste the job description here..."
-              className="min-h-[200px] flex-1 resize-none font-mono text-sm"
-              value={jd}
-              onChange={(e) => setJd(e.target.value)}
-              disabled={pipeline.running}
-            />
-            <div className="mt-3 flex gap-2">
-              {!pipeline.running ? (
-                <Button onClick={handleRun} className="flex-1">
-                  <Play className="mr-1.5 size-4" />
-                  Generate Resume
-                </Button>
-              ) : (
-                <Button variant="destructive" onClick={pipeline.cancel} className="flex-1">
-                  <Square className="mr-1.5 size-4" />
-                  Cancel
-                </Button>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-1"
-              onClick={() => setJd(EXAMPLE_JD)}
-              disabled={pipeline.running}
-            >
-              Load example JD
-            </Button>
-          </>
-        )}
-      </div>
+      <JDInputPanel
+        mode={mode}
+        onModeChange={setMode}
+        manualJd={manualJd}
+        onManualJdChange={setManualJd}
+        linkJd={linkJd}
+        onLinkJdChange={setLinkJd}
+        link={link}
+        onLinkChange={setLink}
+        onFetchLink={handleFetchLink}
+        onCancelFetch={jobFetch.cancel}
+        onRetryWithReader={handleRetryWithReader}
+        fetchStatus={jobFetch.status}
+        fetchResult={jobFetch.data}
+        fetchError={jobFetch.error}
+        attemptedUrl={jobFetch.attemptedUrl}
+        linkStale={linkStale}
+        readerEnabled={readerEnabled}
+        onReaderEnabledChange={handleReaderEnabledChange}
+        autoRun={autoRun}
+        onAutoRunChange={setAutoRun}
+        onRun={handleRun}
+        onCancelRun={pipeline.cancel}
+        running={pipeline.running}
+        resumeLoaded={resumeLoaded}
+        startBlocked={startBlocked}
+        onDismissStartBlocked={() => setStartBlocked(null)}
+        onLoadExample={() => setManualJd(EXAMPLE_JD)}
+      />
 
       {/* Right: Results */}
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -181,7 +257,7 @@ export default function BuilderPage() {
         </div>
 
         {pipeline.error && (
-          <div className="mx-6 mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="border-destructive/50 bg-destructive/10 text-destructive mx-6 mt-4 rounded-lg border p-4 text-sm">
             {pipeline.error}
           </div>
         )}
@@ -189,10 +265,8 @@ export default function BuilderPage() {
         {!pipeline.analysis && !pipeline.running && !pipeline.error && (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
-              <FileText className="mx-auto size-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm text-muted-foreground">
-                Paste a job description and click Generate Resume
-              </p>
+              <FileText className="text-muted-foreground/40 mx-auto size-10" />
+              <p className="text-muted-foreground mt-3 text-sm">{UI_COPY.noDescriptionYet}</p>
             </div>
           </div>
         )}
@@ -207,7 +281,7 @@ export default function BuilderPage() {
                     : `Resume Ready (${pipeline.iteration} iterations)`}
                   {latexAvailable && ' • LaTeX Generated'}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {isConverged
                     ? `Score: ${pipeline.critique?.score}/100 — ATS Score: ${pipeline.critique?.atsScore}/100`
                     : `Max iterations reached. Best score: ${pipeline.bestScore}/100.`}
@@ -295,7 +369,7 @@ export default function BuilderPage() {
                 ) : pipeline.running && pipeline.currentStep === 'jd-analysis' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for JD analysis...
                   </p>
                 )}
@@ -309,7 +383,7 @@ export default function BuilderPage() {
                 ) : pipeline.running && pipeline.currentStep === 'experience-mapping' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for experience mapping...
                   </p>
                 )}
@@ -332,7 +406,7 @@ export default function BuilderPage() {
                     pipeline.currentStep === 'resume-critique') ? (
                   <LoadingResume />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for resume generation...
                   </p>
                 )}
@@ -353,7 +427,7 @@ export default function BuilderPage() {
                 ) : pipeline.running && pipeline.currentStep === 'resume-critique' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Waiting for critique...
                   </p>
                 )}
@@ -379,7 +453,7 @@ export default function BuilderPage() {
                 ) : latexPhase ? (
                   <LoadingResume />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     LaTeX will be generated after the critique phase...
                   </p>
                 )}
@@ -394,7 +468,7 @@ export default function BuilderPage() {
                 ) : latexPhase && pipeline.currentStep === 'latex-verification' ? (
                   <LoadingCards />
                 ) : (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
+                  <p className="text-muted-foreground py-8 text-center text-sm">
                     Verification runs after LaTeX compilation...
                   </p>
                 )}
