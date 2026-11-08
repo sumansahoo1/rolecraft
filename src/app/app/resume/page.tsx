@@ -47,6 +47,7 @@ export default function ResumePage() {
   const [mode, setMode] = useState<EditorMode>('form');
   const [jsonValid, setJsonValid] = useState(true);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [editorRevision, setEditorRevision] = useState(0);
 
   /* eslint-disable react-hooks/set-state-in-effect -- localStorage is only readable after mount */
@@ -149,8 +150,17 @@ export default function ResumePage() {
   };
 
   const handleContinue = () => {
-    if (dirty && !handleSave()) return;
+    if (dirty) {
+      setPendingHref('/app/builder');
+      return;
+    }
     router.push('/app/builder');
+  };
+
+  const handleDiscardAndLeave = () => {
+    const target = pendingHref;
+    setPendingHref(null);
+    if (target) router.push(target);
   };
 
   useEffect(() => {
@@ -176,27 +186,34 @@ export default function ResumePage() {
 
   useEffect(() => {
     if (!dirty) return;
-    const handlePopState = () => {
-      handleSave();
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [dirty, handleSave]);
-
-  useEffect(() => {
-    if (!dirty) return;
     const handleInternalNavigation = (event: MouseEvent) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
       const target = event.target as Element | null;
       const anchor = target?.closest?.('a[href]') as HTMLAnchorElement | null;
-      if (!anchor || anchor.target === '_blank') return;
-      const href = anchor.getAttribute('href');
-      if (!href || !href.startsWith('/')) return;
-      if (!handleSave()) event.preventDefault();
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingHref(`${url.pathname}${url.search}${url.hash}`);
     };
     document.addEventListener('click', handleInternalNavigation, true);
     return () => document.removeEventListener('click', handleInternalNavigation, true);
-  }, [dirty, handleSave]);
+  }, [dirty]);
 
   return (
     <ErrorBoundary>
@@ -225,6 +242,50 @@ export default function ResumePage() {
               )}
             </div>
           </div>
+
+          {hasResume && (
+            <div className="bg-background/95 sticky top-0 z-20 -mx-6 mb-6 border-b px-6 py-3 backdrop-blur">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                  {dirty ? (
+                    <>
+                      <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <span className="size-2 rounded-full bg-amber-500" />
+                        Unsaved changes
+                      </span>
+                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                        Save with
+                        <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">
+                          ⌘/Ctrl + S
+                        </kbd>
+                        or the button
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Check className="size-4 text-green-600 dark:text-green-400" />
+                      All changes saved
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {dirty && (
+                    <Button variant="outline" onClick={handleDiscard}>
+                      Discard
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleSave}
+                    disabled={!dirty || (mode === 'json' && !jsonValid)}
+                    title="Save changes (Cmd/Ctrl+S)"
+                  >
+                    <Save className="mr-1.5 size-4" />
+                    Save changes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="border-destructive/50 bg-destructive/10 text-destructive mb-6 rounded-lg border p-4 text-sm">
@@ -303,41 +364,6 @@ export default function ResumePage() {
                   </div>
                 )
               ) : null}
-
-              <div className="bg-background/95 sticky bottom-0 z-20 -mx-6 mt-6 border-t px-6 py-3 backdrop-blur">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    {dirty ? (
-                      <>
-                        <span className="size-2 rounded-full bg-amber-500" />
-                        <span className="text-amber-600 dark:text-amber-400">Unsaved changes</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="size-4 text-green-600 dark:text-green-400" />
-                        <span className="text-muted-foreground">All changes saved</span>
-                      </>
-                    )}
-                    <span className="text-muted-foreground hidden text-xs sm:inline">
-                      Cmd/Ctrl + S to save
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    {dirty && (
-                      <Button variant="outline" onClick={handleDiscard}>
-                        Discard
-                      </Button>
-                    )}
-                    <Button
-                      onClick={handleSave}
-                      disabled={!dirty || (mode === 'json' && !jsonValid)}
-                    >
-                      <Save className="mr-1.5 size-4" />
-                      Save changes
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </div>
@@ -358,6 +384,30 @@ export default function ResumePage() {
             </Button>
             <Button variant="destructive" onClick={handleClearResume}>
               Clear resume
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={pendingHref !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingHref(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave with unsaved changes?</DialogTitle>
+            <DialogDescription>
+              Your master resume has unsaved changes. Leaving this page will discard them. Press
+              Save or Cmd/Ctrl+S first if you want to keep your edits.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingHref(null)}>
+              Keep editing
+            </Button>
+            <Button variant="destructive" onClick={handleDiscardAndLeave}>
+              Discard &amp; leave
             </Button>
           </DialogFooter>
         </DialogContent>
