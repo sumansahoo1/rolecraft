@@ -67,6 +67,24 @@ function buildProjectAllowedNumbers(dataset: GitHubDataset, project: GitHubProje
   return allowed;
 }
 
+function buildExternalRepoAllowedNumbers(
+  dataset: GitHubDataset,
+  repoFullName: string
+): Set<number> {
+  const allowed = new Set<number>();
+  const repo = dataset.collaboration.externalRepos.find(
+    (item) => item.fullName.toLowerCase() === repoFullName.toLowerCase()
+  );
+  if (repo) addAll(allowed, [repo.pullRequests, repo.merged]);
+  const issueCount = dataset.issues.filter(
+    (issue) => issue.repoFullName.toLowerCase() === repoFullName.toLowerCase()
+  ).length;
+  if (issueCount > 0) allowed.add(issueCount);
+  addNumbersFromText(allowed, repoFullName);
+  addYearNumbers(allowed, dataset);
+  return allowed;
+}
+
 export function buildAllowedNumbers(dataset: GitHubDataset): Set<number> {
   const allowed = new Set<number>();
   const { profile, stats, coverage, timeline, projects, collaboration } = dataset;
@@ -188,7 +206,8 @@ export function isUsableGitHubSummary(summary: GitHubWorkSummary): boolean {
     summary.professionalOverview.trim().length >= 80 &&
     (summary.expertise.length > 0 ||
       summary.workTimeline.length > 0 ||
-      summary.projectSpotlights.length > 0)
+      summary.projectHighlights.length > 0 ||
+      summary.openSourceHighlights.length > 0)
   );
 }
 
@@ -268,9 +287,9 @@ export function validateGitHubSummary(
     }
   }
 
-  const projectSpotlights: GitHubWorkSummary['projectSpotlights'] = [];
-  if (Array.isArray(raw.projectSpotlights)) {
-    for (const item of raw.projectSpotlights) {
+  const projectHighlights: GitHubWorkSummary['projectHighlights'] = [];
+  if (Array.isArray(raw.projectHighlights)) {
+    for (const item of raw.projectHighlights) {
       if (!isRecord(item)) continue;
       const requestedRepo = asString(item.repo, 160).toLowerCase();
       const project = projectAllowlist.get(requestedRepo);
@@ -280,26 +299,64 @@ export function validateGitHubSummary(
         );
         continue;
       }
-      const whatItIs = asString(item.whatItIs, 700);
-      const technicalSignals = asStringArray(item.technicalSignals, 8, 220);
-      const whyItMatters = asString(item.whyItMatters, 700);
-      if (!whatItIs && !whyItMatters) continue;
-      if (
-        !allGrounded(
-          [whatItIs, whyItMatters, ...technicalSignals],
-          buildProjectAllowedNumbers(dataset, project)
-        )
-      ) {
-        warnings.push('A project spotlight containing an unverified number was removed.');
+      const overview = asString(item.overview, 700);
+      const bullets = extractResumeBullets(
+        item.bullets,
+        5,
+        300,
+        buildProjectAllowedNumbers(dataset, project),
+        warnings,
+        'project bullet'
+      );
+      if (!overview && bullets.length === 0) continue;
+      if (!allGrounded([overview], buildProjectAllowedNumbers(dataset, project))) {
+        warnings.push('A project overview containing an unverified number was removed.');
         continue;
       }
-      projectSpotlights.push({
+      projectHighlights.push({
         repo: project.repo.fullName,
-        whatItIs,
-        technicalSignals,
-        whyItMatters,
+        overview,
+        bullets,
       });
-      if (projectSpotlights.length >= 6) break;
+      if (projectHighlights.length >= 6) break;
+    }
+  }
+
+  const openSourceAllowlist = new Map(
+    dataset.collaboration.externalRepos.map((repo) => [repo.fullName.toLowerCase(), repo])
+  );
+  const openSourceHighlights: GitHubWorkSummary['openSourceHighlights'] = [];
+  if (Array.isArray(raw.openSourceHighlights)) {
+    for (const item of raw.openSourceHighlights) {
+      if (!isRecord(item)) continue;
+      const requestedRepo = asString(item.repo, 160).toLowerCase();
+      const repo = openSourceAllowlist.get(requestedRepo);
+      if (!repo) {
+        warnings.push(
+          'The AI referenced an open-source repository that was not among the sampled external contributions; it was removed.'
+        );
+        continue;
+      }
+      const overview = asString(item.overview, 700);
+      const bullets = extractResumeBullets(
+        item.bullets,
+        5,
+        300,
+        buildExternalRepoAllowedNumbers(dataset, repo.fullName),
+        warnings,
+        'open-source bullet'
+      );
+      if (!overview && bullets.length === 0) continue;
+      if (!allGrounded([overview], buildExternalRepoAllowedNumbers(dataset, repo.fullName))) {
+        warnings.push('An open-source overview containing an unverified number was removed.');
+        continue;
+      }
+      openSourceHighlights.push({
+        repo: repo.fullName,
+        overview,
+        bullets,
+      });
+      if (openSourceHighlights.length >= 6) break;
     }
   }
 
@@ -320,21 +377,14 @@ export function validateGitHubSummary(
     'work-style observation'
   );
 
-  const resumeBullets: GitHubWorkSummary['resumeBullets'] = [];
-  if (Array.isArray(raw.resumeBullets)) {
-    for (const item of raw.resumeBullets) {
-      if (!isRecord(item)) continue;
-      const text = asString(item.text, 300);
-      const evidence = asStringArray(item.evidence, 4, 220);
-      if (!text) continue;
-      if (!allGrounded([text, ...evidence], allowedNumbers)) {
-        warnings.push('A resume bullet containing an unverified number was removed.');
-        continue;
-      }
-      resumeBullets.push({ text, evidence });
-      if (resumeBullets.length >= 8) break;
-    }
-  }
+  const resumeBullets = extractResumeBullets(
+    raw.resumeBullets,
+    8,
+    300,
+    allowedNumbers,
+    warnings,
+    'resume bullet'
+  );
 
   const caveats = extractGroundedList(raw.caveats, 5, 300, allowedNumbers, warnings, 'caveat');
 
@@ -355,7 +405,8 @@ export function validateGitHubSummary(
     professionalOverview,
     expertise,
     workTimeline,
-    projectSpotlights,
+    projectHighlights,
+    openSourceHighlights,
     collaborationSignals,
     workStyleObservations,
     resumeBullets,
@@ -370,6 +421,31 @@ export function validateGitHubSummary(
     warnings.push('The AI response did not include enough usable content.');
   }
   return { summary, warnings, usable: false };
+}
+
+function extractResumeBullets(
+  value: unknown,
+  maxItems: number,
+  maxChars: number,
+  allowedNumbers: Set<number>,
+  warnings: string[],
+  label: string
+): GitHubWorkSummary['resumeBullets'] {
+  if (!Array.isArray(value)) return [];
+  const bullets: GitHubWorkSummary['resumeBullets'] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const text = asString(item.text, maxChars);
+    const evidence = asStringArray(item.evidence, 4, 220);
+    if (!text) continue;
+    if (!allGrounded([text, ...evidence], allowedNumbers)) {
+      warnings.push(`A ${label} containing an unverified number was removed.`);
+      continue;
+    }
+    bullets.push({ text, evidence });
+    if (bullets.length >= maxItems) break;
+  }
+  return bullets;
 }
 
 function extractGroundedList(
@@ -401,7 +477,8 @@ function emptySummary(dataset: GitHubDataset): GitHubWorkSummary {
     professionalOverview: '',
     expertise: [],
     workTimeline: [],
-    projectSpotlights: [],
+    projectHighlights: [],
+    openSourceHighlights: [],
     collaborationSignals: [],
     workStyleObservations: [],
     resumeBullets: [],

@@ -403,7 +403,7 @@ HARD GROUNDING RULES
 4. Distinguish owned repositories, forked repositories, and pull requests/issues to repositories owned by others. A pull request to a repository is not ownership and is not employment.
 5. Use repository full names exactly as provided. Never invent a repository, URL, technology, date, or number.
 6. Do not compute new totals, averages, percentages, or derived counts. Use the structured numbers provided in the dossier.
-7. Do not use numbers that appear only inside README text, repository descriptions, commit messages, PR/issue titles, or the profile README. The only derived cardinalities you may mention are: active-year span, project count, language count, active-year count, and external-repository count, when those values are present in the dossier. Inside project spotlights, use only that repository's own metrics and dates; do not use derived cardinalities there.
+7. Do not use numbers that appear only inside README text, repository descriptions, commit messages, PR/issue titles, or the profile README. The only derived cardinalities you may mention are: active-year span, project count, language count, active-year count, and external-repository count, when those values are present in the dossier. Inside a project highlight, use only that repository's own metrics and dates; do not use derived cardinalities there. Inside an open-source highlight, use only that external repository's sampled pull-request and issue counts.
 8. If evidence is thin or conflicting, say so in caveats. Do not pad.
 9. Write in the third person. Do not use first-person voice.
 10. Return ONLY a JSON object matching the schema below. No markdown fences, no prose outside JSON.
@@ -413,6 +413,18 @@ STYLE
 - Prefer concrete nouns and verbs over adjectives.
 - A senior engineer should recognize the work from the summary.
 - This is a work summary for a resume conversation, not a personality profile.
+- The primary output is resume-ready bullet points grouped by project and by open-source contribution. The narrative is only a short brief.
+
+RESUME BULLET RULES
+- Write 2-5 bullets for each project highlight and each open-source highlight.
+- Each bullet must stand alone in a resume. Include what was built or changed, how it was done (technology, architecture, or approach), and the observable evidence or scope from the dossier.
+- Start every bullet with a strong past-tense action verb. Never start with "Worked on", "Responsible for", "Helped with", or "Involved in".
+- Make each bullet distinct. Cover different angles such as architecture, core feature, reliability or performance, developer tooling, documentation, and collaboration. Do not restate the same achievement.
+- Prefer technical nouns and concrete verbs from repository descriptions, topics, languages, README excerpts, and sampled commit messages. Treat those fields as context to describe the work, not as permission to copy unverified numbers.
+- A reader should understand the project and this person's contribution from the section title plus bullets alone.
+- Do not mention stars, forks, or follower counts inside bullets unless the number materially demonstrates engineering scope. Never describe them as users, downloads, or adoption.
+- Keep bullets to one sentence, between 10 and 300 characters.
+- Use this shape (illustrative only, never copy these facts): repo name, then 2-5 bullets such as "Built a TypeScript CLI that parses configuration files and exposes a plugin API for extensions" and "Reduced repeated setup code by extracting a shared parser used across the command set".
 
 OUTPUT SCHEMA
 {
@@ -430,32 +442,50 @@ OUTPUT SCHEMA
       "evidence": ["string"]
     }
   ],
-  "projectSpotlights": [
+  "projectHighlights": [
     {
       "repo": "owner/name (must exactly match a dossier project)",
-      "whatItIs": "string",
-      "technicalSignals": ["string"],
-      "whyItMatters": "string, grounded in observable engineering signals"
+      "overview": "string, 1-2 sentences that briefly explain what the project is",
+      "bullets": [
+        { "text": "string, resume-ready bullet with enough context to stand alone", "evidence": ["string, repo fact, README signal, or sampled commit message"] }
+      ]
+    }
+  ],
+  "openSourceHighlights": [
+    {
+      "repo": "owner/name (must exactly match a sampled external repository in the dossier)",
+      "overview": "string, 1-2 sentences on the contribution area",
+      "bullets": [
+        { "text": "string, resume-ready bullet describing the contribution and its context", "evidence": ["string, sampled PR/issue title or repo fact"] }
+      ]
     }
   ],
   "collaborationSignals": ["string, external PRs, merged PRs, issue authoring"],
   "workStyleObservations": ["string, evidence-based patterns only"],
   "resumeBullets": [
-    { "text": "string, action verb, third person, no invented numbers", "evidence": ["string"] }
+    { "text": "string, profile-level achievement that spans projects; do not duplicate a project bullet", "evidence": ["string"] }
   ],
   "caveats": ["string, sampling and coverage limitations"]
 }
 
+PROJECT AND OPEN-SOURCE SELECTION
+- projectHighlights: owned repositories only, taken from the dossier projects list. Prefer the 3-6 projects that best demonstrate engineering depth. If the candidate has no owned projects, return an empty array.
+- openSourceHighlights: only repositories that appear in the dossier collaboration external repositories, using sampled external pull requests and issues. If there are none, return an empty array.
+- Never describe a pull request to another repository as ownership, employment, or a project the candidate founded.
+- Never claim a maintainer, core-team, or reviewer role unless the dossier explicitly supports it. "Contributor" is the safe default.
+- Use sampled pull-request and issue titles to explain the contribution area, but do not invent outcomes, reviews, or adoption.
+
 LIMITS
 - expertise: at most 6 items.
 - workTimeline: at most 8 eras. Use the actual sampled years.
-- projectSpotlights: at most 6 items, owned projects only.
+- projectHighlights: at most 6 items, each with at most 5 bullets.
+- openSourceHighlights: at most 6 items, each with at most 5 bullets.
 - collaborationSignals: at most 8.
 - workStyleObservations: at most 6.
-- resumeBullets: at most 8, each at most 300 characters.
+- resumeBullets: at most 4 profile-level bullets, each at most 300 characters.
 - caveats: at most 5.
 
-If the dossier is thin, return a short, honest summary rather than inventing detail.`;
+If the dossier is thin, return a short, honest summary with fewer bullets rather than inventing detail.`;
 
 export const RESUME_SPEC_GENERATION_PROMPT = `You are an expert resume data structurer. Convert the provided plain-text resume into a structured JSON format (ResumeSpec). This structured format will be used to generate a professional LaTeX resume.
 

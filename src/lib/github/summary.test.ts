@@ -16,61 +16,82 @@ describe('GitHub summary validation', () => {
     expect(isUsableGitHubSummary(result.summary)).toBe(true);
   });
 
-  it('drops spotlights for repositories that were not fetched', () => {
+  it('drops project highlights for repositories that were not fetched', () => {
     const raw = makeSummary({
-      projectSpotlights: [
+      projectHighlights: [
         {
           repo: 'octocat/unknown',
-          whatItIs: 'Invented project.',
-          technicalSignals: [],
-          whyItMatters: 'Not real.',
+          overview: 'Invented project.',
+          bullets: [],
         },
-        ...makeSummary().projectSpotlights,
+        ...makeSummary().projectHighlights,
       ],
     });
     const result = validateGitHubSummary(raw, makeDataset());
-    expect(result.summary.projectSpotlights.map((item) => item.repo)).toEqual(['octocat/alpha']);
+    expect(result.summary.projectHighlights.map((item) => item.repo)).toEqual(['octocat/alpha']);
     expect(result.warnings.join(' ')).toContain('not among the analyzed projects');
   });
 
-  it('grounds each spotlight against only that repository', () => {
+  it('grounds each project highlight against only that repository', () => {
     const result = validateGitHubSummary(
       makeSummary({
-        projectSpotlights: [
+        projectHighlights: [
           {
             repo: 'octocat/alpha',
-            whatItIs: 'Alpha has 40 stars.',
-            technicalSignals: [],
-            whyItMatters: 'Another repository number.',
+            overview: 'Alpha has 40 stars.',
+            bullets: [],
           },
           {
             repo: 'octocat/alpha',
-            whatItIs: 'Alpha contributes to 162 analyzed stars.',
-            technicalSignals: [],
-            whyItMatters: 'An aggregate number.',
+            overview: 'Alpha contributes to 162 analyzed stars.',
+            bullets: [],
           },
           {
             repo: 'octocat/alpha',
-            whatItIs: 'A TypeScript CLI with 120 stars and 10 forks.',
-            technicalSignals: ['3 sampled commits'],
-            whyItMatters: 'Grounded in its own repository metadata.',
+            overview: 'A TypeScript CLI with 120 stars and 10 forks.',
+            bullets: [
+              {
+                text: 'Maintained a TypeScript CLI with 3 sampled commits.',
+                evidence: ['octocat/alpha'],
+              },
+            ],
           },
         ],
       }),
       makeDataset()
     );
 
-    expect(result.summary.projectSpotlights).toEqual([
+    expect(result.summary.projectHighlights).toEqual([
       {
         repo: 'octocat/alpha',
-        whatItIs: 'A TypeScript CLI with 120 stars and 10 forks.',
-        technicalSignals: ['3 sampled commits'],
-        whyItMatters: 'Grounded in its own repository metadata.',
+        overview: 'A TypeScript CLI with 120 stars and 10 forks.',
+        bullets: [
+          {
+            text: 'Maintained a TypeScript CLI with 3 sampled commits.',
+            evidence: ['octocat/alpha'],
+          },
+        ],
       },
     ]);
-    expect(result.warnings.filter((warning) => warning.includes('project spotlight'))).toHaveLength(
-      2
+    expect(result.warnings.filter((warning) => warning.includes('project'))).toHaveLength(2);
+  });
+
+  it('drops open-source highlights for repositories without sampled contributions', () => {
+    const result = validateGitHubSummary(
+      makeSummary({
+        openSourceHighlights: [
+          {
+            repo: 'org/unknown',
+            overview: 'No sampled contributions.',
+            bullets: [],
+          },
+          ...makeSummary().openSourceHighlights,
+        ],
+      }),
+      makeDataset()
     );
+    expect(result.summary.openSourceHighlights.map((item) => item.repo)).toEqual(['org/lib']);
+    expect(result.warnings.join(' ')).toContain('sampled external contributions');
   });
 
   it('only treats spotlights as structured repository references', () => {
@@ -169,7 +190,7 @@ describe('GitHub summary validation', () => {
     expect(result.usable).toBe(true);
   });
 
-  it('grounds timeline, spotlight, list, and caveat fields too', () => {
+  it('grounds timeline, project, open-source, list, and caveat fields too', () => {
     const result = validateGitHubSummary(
       makeSummary({
         workTimeline: [
@@ -181,12 +202,18 @@ describe('GitHub summary validation', () => {
             evidence: ['999 repos'],
           },
         ],
-        projectSpotlights: [
+        projectHighlights: [
           {
             repo: 'octocat/alpha',
-            whatItIs: '999 tools',
-            technicalSignals: ['999 commits'],
-            whyItMatters: '999 users',
+            overview: '999 tools',
+            bullets: [{ text: 'Delivered 999 commits.', evidence: ['999 users'] }],
+          },
+        ],
+        openSourceHighlights: [
+          {
+            repo: 'org/lib',
+            overview: '999 contributions',
+            bullets: [{ text: 'Merged 999 pull requests.', evidence: ['999 reviews'] }],
           },
         ],
         collaborationSignals: ['Reviewed 999 PRs'],
@@ -196,7 +223,8 @@ describe('GitHub summary validation', () => {
       makeDataset()
     );
     expect(result.summary.workTimeline).toEqual([]);
-    expect(result.summary.projectSpotlights).toEqual([]);
+    expect(result.summary.projectHighlights).toEqual([]);
+    expect(result.summary.openSourceHighlights).toEqual([]);
     expect(result.summary.collaborationSignals).toEqual([]);
     expect(result.summary.workStyleObservations).toEqual([]);
     expect(result.summary.caveats).toEqual([

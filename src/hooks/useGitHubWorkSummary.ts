@@ -216,9 +216,17 @@ export function useGitHubWorkSummary() {
         return { ok: false as const, reason: 'no-resume' as const };
       }
       const extraction = getExtractionJson();
+      const bulletsByRepo = new Map(
+        (state.summary?.projectHighlights ?? []).map((highlight) => [
+          highlight.repo,
+          highlight.bullets.map((bullet) => bullet.text),
+        ])
+      );
       const merged = mergeGitHubProjectsIntoExtraction(
         extraction,
-        projects ?? state.dataset.projects
+        projects ?? state.dataset.projects,
+        4,
+        bulletsByRepo
       );
       if (!merged.ok) return merged;
       try {
@@ -229,7 +237,7 @@ export function useGitHubWorkSummary() {
         return { ok: false as const, reason: 'quota' as const };
       }
     },
-    [state.dataset]
+    [state.dataset, state.summary]
   );
 
   return {

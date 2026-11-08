@@ -391,19 +391,43 @@ export function makeSummary(overrides: Partial<GitHubWorkSummary> = {}): GitHubW
         evidence: ['octocat/alpha'],
       },
     ],
-    projectSpotlights: [
+    projectHighlights: [
       {
         repo: 'octocat/alpha',
-        whatItIs: 'A TypeScript command line tool.',
-        technicalSignals: ['TypeScript', 'CLI'],
-        whyItMatters: 'Shows sustained maintenance of a developer-facing tool.',
+        overview: 'A TypeScript command line tool.',
+        bullets: [
+          {
+            text: 'Built a TypeScript command line tool and maintained it across multiple years.',
+            evidence: ['octocat/alpha', 'Start the TypeScript CLI'],
+          },
+          {
+            text: 'Extended the tool with a plugin architecture recorded in sampled commit history.',
+            evidence: ['Add plugin architecture'],
+          },
+        ],
+      },
+    ],
+    openSourceHighlights: [
+      {
+        repo: 'org/lib',
+        overview: 'Contributed parser fixes and feature work to a shared library.',
+        bullets: [
+          {
+            text: 'Fixed parser defects in a shared library through sampled pull requests.',
+            evidence: ['Fix parser'],
+          },
+          {
+            text: 'Proposed a new feature to the same library through a sampled pull request.',
+            evidence: ['Add feature'],
+          },
+        ],
       },
     ],
     collaborationSignals: ['Submitted sampled pull requests to org/lib.'],
     workStyleObservations: ['Sustains maintenance over multiple years.'],
     resumeBullets: [
       {
-        text: 'Built and maintained a TypeScript CLI with sampled commits across multiple years.',
+        text: 'Maintains a TypeScript command line tool across multiple years of sampled activity.',
         evidence: ['octocat/alpha'],
       },
     ],

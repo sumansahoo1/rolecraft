@@ -106,4 +106,17 @@ describe('GitHub resume merge', () => {
     });
     expect(converted.highlights?.join(' ')).toContain('GitHub stars');
   });
+
+  it('prefers generated resume bullets over sampled metric highlights', () => {
+    const bulletsByRepo = new Map([
+      ['octocat/alpha', ['Built a TypeScript CLI with a plugin architecture.']],
+    ]);
+    const result = mergeGitHubProjectsIntoExtraction({ projects: [] }, projects, 4, bulletsByRepo);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const alpha = result.added.find((item) => item.name === 'alpha');
+    expect(alpha?.highlights).toEqual(['Built a TypeScript CLI with a plugin architecture.']);
+    const beta = result.added.find((item) => item.name === 'beta');
+    expect(beta?.highlights?.join(' ')).toContain('GitHub stars');
+  });
 });
