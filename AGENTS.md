@@ -24,6 +24,13 @@ npm run test:typecheck # tsc on tests + vitest config
 
 Vitest is configured in `vitest.config.mts` (node environment, `@` alias). Next's `tsconfig.json` excludes test files and `__tests__`; tests are typechecked separately with `tsconfig.test.json`. Pre-commit hooks run lint-staged (eslint --fix + prettier on staged .ts/.tsx, prettier on .json/.css/.md/.mjs) and commitlint validates Conventional Commits format.
 
+## Worktrees
+
+- Create development worktrees in `/Users/sumansahoo/myfolder/git-worktrees/`.
+- Name them `<repo>-<branch-slug>`, for example `rolecraft-master-resume-editing`.
+- Never create worktrees inside OpenCode config or data directories.
+- Keep the primary checkout at `/Users/sumansahoo/myfolder/rolecraft`.
+
 ## Architecture
 
 - **No backend of its own.** No server, no API routes, no database. AI provider calls go directly from the browser to DeepSeek / OpenAI / Anthropic / Google / OpenRouter. Job links use public ATS APIs directly; the optional `r.jina.ai` reader is a third-party fetcher (see `lib/jd-link/`).
