@@ -53,15 +53,20 @@ export default function SettingsPage() {
   const [githubLogin, setGithubLogin] = useState<string | null>(null);
   const [githubScopes, setGithubScopes] = useState<string[] | null>(null);
   const prevKeyRef = useRef(apiKey);
+  const prevGithubTokenRef = useRef(githubToken);
+  const verifyGithubIntentRef = useRef(false);
 
   // Load stored settings on client only to avoid hydration mismatch
   useEffect(() => {
     const storedProvider = getProvider();
+    const storedGithubToken = getGitHubToken() ?? '';
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProviderState(storedProvider);
     setApiKeyState(getApiKey(storedProvider) ?? '');
     setModelState(getModel());
-    setGithubTokenState(getGitHubToken() ?? '');
+    setGithubTokenState(storedGithubToken);
+    // A token already stored before this visit is not a new configuration.
+    prevGithubTokenRef.current = storedGithubToken;
   }, []);
 
   const handleProviderChange = (value: string | null) => {
@@ -125,11 +130,25 @@ export default function SettingsPage() {
     setGithubTokenState(value);
     setGithubLogin(null);
     setGithubScopes(null);
+    verifyGithubIntentRef.current = false;
     try {
       setGitHubToken(value);
     } catch {
       toast.error('Could not save the GitHub token in this browser');
     }
+  };
+
+  const handleGithubTokenBlur = () => {
+    // Same auto-forward as the API key: a newly configured token moves the user on.
+    // Skip it when the user is reaching for Verify, so a rejected token keeps them here.
+    if (
+      githubToken.trim() &&
+      !prevGithubTokenRef.current.trim() &&
+      !verifyGithubIntentRef.current
+    ) {
+      router.push('/app');
+    }
+    prevGithubTokenRef.current = githubToken;
   };
 
   const handleVerifyGithub = async () => {
@@ -143,12 +162,14 @@ export default function SettingsPage() {
       setGithubLogin(verification.login);
       setGithubScopes(verification.scopes);
       toast.success(`GitHub token works for @${verification.login}`);
+      router.push('/app');
     } catch (err) {
       setGithubLogin(null);
       setGithubScopes(null);
       const message = err instanceof Error ? err.message : 'Unknown error';
       toast.error(`GitHub token verification failed: ${message}`);
     } finally {
+      verifyGithubIntentRef.current = false;
       setVerifyingGithub(false);
     }
   };
@@ -290,6 +311,7 @@ export default function SettingsPage() {
                   placeholder="github_pat_... or ghp_..."
                   value={githubToken}
                   onChange={(e) => handleGithubTokenChange(e.target.value)}
+                  onBlur={handleGithubTokenBlur}
                   className="pr-9"
                   autoComplete="off"
                   spellCheck={false}
@@ -330,7 +352,14 @@ export default function SettingsPage() {
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={handleVerifyGithub} disabled={verifyingGithub}>
+              <Button
+                variant="outline"
+                onClick={handleVerifyGithub}
+                onPointerDown={() => {
+                  verifyGithubIntentRef.current = true;
+                }}
+                disabled={verifyingGithub}
+              >
                 {verifyingGithub ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
