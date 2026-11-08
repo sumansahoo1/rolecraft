@@ -44,6 +44,8 @@ import type { Provider } from '@/types';
 // Let the success state settle before leaving the page. The user can still
 // move to another control during this window, which cancels the redirect.
 const ROUTE_DELAY_MS = 1610;
+// Main app screen. The app root sends users to the resume or builder page.
+const APP_ROUTE = '/app/resume';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -73,6 +75,10 @@ export default function SettingsPage() {
   const routeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Test Connection is an explicit route request even though its button holds focus.
   const allowRouteWhileFocusedRef = useRef(false);
+  // Last GitHub token that passed verification, so an unchanged token is not re-checked.
+  const lastVerifiedGithubTokenRef = useRef('');
+  // One verification at a time, so a blur check and a Verify click cannot race.
+  const githubVerifyInFlightRef = useRef<string | null>(null);
 
   useEffect(() => {
     apiKeyRef.current = apiKey;
@@ -87,11 +93,14 @@ export default function SettingsPage() {
   // Load stored settings on client only to avoid hydration mismatch
   useEffect(() => {
     const storedProvider = getProvider();
+    const storedGithubToken = getGitHubToken() ?? '';
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProviderState(storedProvider);
     setApiKeyState(getApiKey(storedProvider) ?? '');
     setModelState(getModel());
-    setGithubTokenState(getGitHubToken() ?? '');
+    setGithubTokenState(storedGithubToken);
+    // A token already stored before this visit is not a new configuration.
+    lastVerifiedGithubTokenRef.current = storedGithubToken.trim();
   }, []);
 
   const cancelScheduledRoute = () => {
@@ -114,12 +123,16 @@ export default function SettingsPage() {
     );
   };
 
-  const scheduleRoute = (routeProvider: Provider, allowFocusedControl = false) => {
+  const scheduleRoute = (
+    routeProvider: Provider,
+    allowFocusedControl = false,
+    destination = '/app'
+  ) => {
     cancelScheduledRoute();
     if (!canRoute(routeProvider, allowFocusedControl)) return;
     routeTimerRef.current = setTimeout(() => {
       routeTimerRef.current = null;
-      if (canRoute(routeProvider, allowFocusedControl)) router.push('/app');
+      if (canRoute(routeProvider, allowFocusedControl)) router.push(destination);
     }, ROUTE_DELAY_MS);
   };
 
@@ -273,23 +286,76 @@ export default function SettingsPage() {
     }
   };
 
-  const handleVerifyGithub = async () => {
-    if (!githubToken.trim()) {
-      toast.error('Enter a GitHub token first');
-      return;
-    }
-    setVerifyingGithub(true);
+  const verifyGithubTokenValue = async (token: string): Promise<boolean> => {
+    if (githubVerifyInFlightRef.current === token) return false;
+    githubVerifyInFlightRef.current = token;
     try {
-      const verification = await verifyGitHubToken(githubToken.trim());
+      const verification = await verifyGitHubToken(token);
       setGithubLogin(verification.login);
       setGithubScopes(verification.scopes);
+      lastVerifiedGithubTokenRef.current = token;
       toast.success(`GitHub token works for @${verification.login}`);
+      return true;
     } catch (err) {
       setGithubLogin(null);
       setGithubScopes(null);
       const message = err instanceof Error ? err.message : 'Unknown error';
       toast.error(`GitHub token verification failed: ${message}`);
+      return false;
     } finally {
+      githubVerifyInFlightRef.current = null;
+    }
+  };
+
+  const handleGithubTokenFocus = () => {
+    // Editing the token again clears the "user moved on" guard that the
+    // settings focus capture sets for every control except the API key.
+    navigationBlockedRef.current = false;
+    allowRouteWhileFocusedRef.current = false;
+    cancelScheduledRoute();
+  };
+
+  const handleGithubTokenBlur = async (event: FocusEvent<HTMLInputElement>) => {
+    const token = githubToken.trim();
+    if (!token || token === lastVerifiedGithubTokenRef.current) return;
+
+    // Clicking another control in settings is intent to keep editing; Verify
+    // handles routing explicitly in that case.
+    const next = event.relatedTarget;
+    if (next instanceof HTMLElement && settingsRootRef.current?.contains(next)) {
+      navigationBlockedRef.current = true;
+      return;
+    }
+
+    // Focus left settings, so the user is done configuring. Same flow as the
+    // API key: check the token, then forward only on success.
+    navigationBlockedRef.current = false;
+    setVerifyingGithub(true);
+    try {
+      if (await verifyGithubTokenValue(token)) {
+        scheduleRoute(provider, false, APP_ROUTE);
+      }
+    } finally {
+      setVerifyingGithub(false);
+    }
+  };
+
+  const handleVerifyGithub = async () => {
+    const token = githubToken.trim();
+    if (!token) {
+      toast.error('Enter a GitHub token first');
+      return;
+    }
+    // Explicit action: verify, then route after the delay like Test Connection.
+    navigationBlockedRef.current = false;
+    keyFieldFocusedRef.current = false;
+    allowRouteWhileFocusedRef.current = true;
+    cancelScheduledRoute();
+    setVerifyingGithub(true);
+    try {
+      if (await verifyGithubTokenValue(token)) scheduleRoute(provider, true, APP_ROUTE);
+    } finally {
+      allowRouteWhileFocusedRef.current = false;
       setVerifyingGithub(false);
     }
   };
@@ -299,6 +365,7 @@ export default function SettingsPage() {
     setGithubTokenState('');
     setGithubLogin(null);
     setGithubScopes(null);
+    lastVerifiedGithubTokenRef.current = '';
     toast.success('GitHub token removed');
   };
 
@@ -440,6 +507,8 @@ export default function SettingsPage() {
                   placeholder="github_pat_... or ghp_..."
                   value={githubToken}
                   onChange={(e) => handleGithubTokenChange(e.target.value)}
+                  onFocus={handleGithubTokenFocus}
+                  onBlur={handleGithubTokenBlur}
                   className="pr-9"
                   autoComplete="off"
                   spellCheck={false}
