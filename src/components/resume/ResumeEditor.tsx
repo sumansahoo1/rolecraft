@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, Save, Undo2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -30,9 +30,8 @@ const OTHER_WORK_TYPES = [
 ] as const;
 
 interface ResumeEditorProps {
-  initial: MasterResume;
-  onSave: (resume: MasterResume) => void;
-  onReExtract: () => void;
+  value: MasterResume;
+  onChange: (resume: MasterResume) => void;
 }
 
 function emptyExperience(): Experience {
@@ -64,34 +63,43 @@ function migrateProjects(projects: unknown | undefined): Project[] | undefined {
   return projects as Project[];
 }
 
-export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps) {
-  const [resume, setResume] = useState<MasterResume>({
-    ...initial,
-    projects: migrateProjects(initial.projects),
-  });
-  const [skillInput, setSkillInput] = useState('');
+interface SkillGroup {
+  name: string;
+  items: string[];
+}
 
-  const update = (field: keyof MasterResume, value: unknown) => {
-    setResume((prev) => ({ ...prev, [field]: value }));
+function toSkillGroups(skills: MasterResume['skills']): SkillGroup[] {
+  if (Array.isArray(skills)) {
+    return skills.length > 0 ? [{ name: 'Skills', items: skills }] : [];
+  }
+  return Object.entries(skills ?? {}).map(([name, items]) => ({ name, items }));
+}
+
+function nextAvailableName(prefix: string, used: Iterable<string>): string {
+  const taken = new Set(used);
+  let index = taken.size + 1;
+  while (taken.has(`${prefix} ${index}`)) index++;
+  return `${prefix} ${index}`;
+}
+
+function fromSkillGroups(groups: SkillGroup[]): MasterResume['skills'] {
+  const merged: Record<string, string[]> = {};
+  for (const group of groups) {
+    const name = group.name.trim().length === 0 ? 'Skills' : group.name;
+    const items = group.items.map((item) => item.trim()).filter((item) => item.length > 0);
+    merged[name] = [...new Set([...(merged[name] ?? []), ...items])];
+  }
+  return merged;
+}
+
+export function ResumeEditor({ value, onChange }: ResumeEditorProps) {
+  const resume: MasterResume = {
+    ...value,
+    projects: migrateProjects(value.projects),
   };
 
-  const addSkill = () => {
-    const skill = skillInput.trim();
-    const skillsList = Array.isArray(resume.skills)
-      ? resume.skills
-      : Object.values(resume.skills).flat();
-    if (skill && !skillsList.includes(skill)) {
-      update('skills', [...skillsList, skill]);
-      setSkillInput('');
-    }
-  };
-
-  const removeSkill = (skill: string) => {
-    if (!Array.isArray(resume.skills)) return;
-    update(
-      'skills',
-      resume.skills.filter((s) => s !== skill)
-    );
+  const update = (field: keyof MasterResume, nextValue: unknown) => {
+    onChange({ ...resume, [field]: nextValue });
   };
 
   // ─── Generic list field CRUD ───
@@ -128,7 +136,10 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
     <div className="flex flex-col gap-6">
       {/* Basic Info */}
       <Card>
-        <CardContent className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2">
+        <CardHeader>
+          <CardTitle>Contact &amp; summary</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 pt-0 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label>Name</Label>
             <Input value={resume.name ?? ''} onChange={(e) => update('name', e.target.value)} />
@@ -143,44 +154,39 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Phone</Label>
-            <Input
-              value={resume.phone ?? ''}
-              onChange={(e) => update('phone', e.target.value || null)}
-            />
+            <Input value={resume.phone ?? ''} onChange={(e) => update('phone', e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>LinkedIn</Label>
             <Input
               value={resume.linkedin ?? ''}
-              onChange={(e) => update('linkedin', e.target.value || null)}
+              onChange={(e) => update('linkedin', e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>GitHub</Label>
-            <Input
-              value={resume.github ?? ''}
-              onChange={(e) => update('github', e.target.value || null)}
-            />
+            <Input value={resume.github ?? ''} onChange={(e) => update('github', e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Twitter / X</Label>
             <Input
               value={resume.twitter ?? ''}
-              onChange={(e) => update('twitter', e.target.value || null)}
+              onChange={(e) => update('twitter', e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Portfolio</Label>
             <Input
               value={resume.portfolio ?? ''}
-              onChange={(e) => update('portfolio', e.target.value || null)}
+              onChange={(e) => update('portfolio', e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Summary</Label>
             <Textarea
-              className="min-h-[80px] resize-y"
+              className="min-h-[90px] resize-y"
               value={resume.summary ?? ''}
+              placeholder="2–3 sentence professional summary..."
               onChange={(e) => update('summary', e.target.value)}
             />
           </div>
@@ -189,49 +195,31 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
       {/* Skills */}
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-4">
-          <Label>Skills</Label>
-          <div className="flex flex-wrap gap-2">
-            {(Array.isArray(resume.skills)
-              ? resume.skills
-              : Object.entries(resume.skills).flatMap(([cat, items]) =>
-                  items.map((item) => `${cat}: ${item}`)
-                )
-            ).map((skill, i) => (
-              <Badge key={`${skill}-${i}`} variant="secondary" className="gap-1 pr-1">
-                {skill}
-                <button
-                  onClick={() => removeSkill(skill)}
-                  className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
-                >
-                  <Trash2 className="size-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add a skill..."
-              value={skillInput}
-              onChange={(e) => setSkillInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addSkill()}
-            />
-            <Button variant="outline" size="sm" onClick={addSkill}>
-              <Plus className="size-4" />
-            </Button>
-          </div>
+        <CardHeader>
+          <CardTitle>Skills</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <SkillsEditor
+            groups={toSkillGroups(resume.skills)}
+            onChange={(groups) => update('skills', fromSkillGroups(groups))}
+          />
         </CardContent>
       </Card>
 
       {/* Experience */}
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-between">
-            <Label>Experience</Label>
-            <Button variant="outline" size="sm" onClick={exp.addItem}>
-              <Plus className="mr-1 size-3.5" /> Add
-            </Button>
-          </div>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Experience</CardTitle>
+          <Button variant="outline" size="sm" onClick={exp.addItem}>
+            <Plus className="mr-1 size-3.5" /> Add role
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-0">
+          {exp.items.length === 0 && (
+            <p className="text-muted-foreground text-sm">
+              No experience entries yet. Add a role to start building your history.
+            </p>
+          )}
           {exp.items.map((item, i) => (
             <div key={i} className="rounded-lg border p-4">
               <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -252,15 +240,18 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">Duration</Label>
                   <Input
+                    placeholder="e.g. Jan 2022 - Present"
                     value={item.duration ?? ''}
                     onChange={(e) => exp.updateItem(i, { ...item, duration: e.target.value })}
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
+                <Label className="text-xs">Highlights</Label>
                 {item.highlights.map((hl, j) => (
-                  <div key={j} className="flex gap-2">
-                    <Input
+                  <div key={j} className="flex items-start gap-2">
+                    <Textarea
+                      className="min-h-[52px] resize-y"
                       value={hl ?? ''}
                       placeholder="Achievement or responsibility..."
                       onChange={(e) => expHL.updateAt(i, j, e.target.value)}
@@ -270,6 +261,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       size="icon"
                       onClick={() => expHL.removeAt(i, j)}
                       className="shrink-0"
+                      title="Remove highlight"
                     >
                       <Trash2 className="text-muted-foreground size-3.5" />
                     </Button>
@@ -285,7 +277,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 onClick={() => exp.removeItem(i)}
                 className="text-destructive mt-2"
               >
-                <Trash2 className="mr-1 size-3.5" /> Remove
+                <Trash2 className="mr-1 size-3.5" /> Remove role
               </Button>
             </div>
           ))}
@@ -294,13 +286,16 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
       {/* Education */}
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-between">
-            <Label>Education</Label>
-            <Button variant="outline" size="sm" onClick={edu.addItem}>
-              <Plus className="mr-1 size-3.5" /> Add
-            </Button>
-          </div>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Education</CardTitle>
+          <Button variant="outline" size="sm" onClick={edu.addItem}>
+            <Plus className="mr-1 size-3.5" /> Add education
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-0">
+          {edu.items.length === 0 && (
+            <p className="text-muted-foreground text-sm">No education entries yet.</p>
+          )}
           {edu.items.map((item, i) => (
             <div key={i} className="rounded-lg border p-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -339,7 +334,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 onClick={() => edu.removeItem(i)}
                 className="text-destructive mt-2"
               >
-                <Trash2 className="mr-1 size-3.5" /> Remove
+                <Trash2 className="mr-1 size-3.5" /> Remove education
               </Button>
             </div>
           ))}
@@ -348,21 +343,16 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
       {/* Certifications */}
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-4">
+        <CardHeader>
+          <CardTitle>Certifications</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
           <div className="flex flex-col gap-1.5">
-            <Label>Certifications (one per line)</Label>
+            <Label className="text-muted-foreground text-xs">One per line</Label>
             <Textarea
-              className="min-h-[60px] resize-y"
+              className="min-h-[70px] resize-y"
               value={resume.certifications?.join('\n') ?? ''}
-              onChange={(e) =>
-                update(
-                  'certifications',
-                  e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                )
-              }
+              onChange={(e) => update('certifications', e.target.value.split('\n'))}
             />
           </div>
         </CardContent>
@@ -370,13 +360,13 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
       {/* Projects */}
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-between">
-            <Label>Projects</Label>
-            <Button variant="outline" size="sm" onClick={proj.addItem}>
-              <Plus className="mr-1 size-3.5" /> Add
-            </Button>
-          </div>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Projects</CardTitle>
+          <Button variant="outline" size="sm" onClick={proj.addItem}>
+            <Plus className="mr-1 size-3.5" /> Add project
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-0">
           {proj.items.length === 0 && (
             <p className="text-muted-foreground text-sm">
               No projects yet. Add personal projects, hackathons, freelance work, or side projects.
@@ -386,7 +376,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
             <div key={i} className="rounded-lg border p-4">
               <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <Label className="text-xs">Project Name</Label>
+                  <Label className="text-xs">Project name</Label>
                   <Input
                     value={item.name ?? ''}
                     onChange={(e) => proj.updateItem(i, { ...item, name: e.target.value })}
@@ -397,18 +387,13 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Input
                     value={item.url ?? ''}
                     placeholder="https://..."
-                    onChange={(e) =>
-                      proj.updateItem(i, {
-                        ...item,
-                        url: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => proj.updateItem(i, { ...item, url: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1 sm:col-span-2">
                   <Label className="text-xs">Description</Label>
                   <Textarea
-                    className="min-h-[50px] resize-y"
+                    className="min-h-[60px] resize-y"
                     value={item.description ?? ''}
                     onChange={(e) => proj.updateItem(i, { ...item, description: e.target.value })}
                   />
@@ -418,12 +403,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Input
                     value={item.duration ?? ''}
                     placeholder="e.g. Jan 2023 - Mar 2023"
-                    onChange={(e) =>
-                      proj.updateItem(i, {
-                        ...item,
-                        duration: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => proj.updateItem(i, { ...item, duration: e.target.value })}
                   />
                 </div>
               </div>
@@ -437,6 +417,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       <button
                         onClick={() => projTags.remove(i, tech)}
                         className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                        title={`Remove ${tech}`}
                       >
                         <Trash2 className="size-3" />
                       </button>
@@ -454,8 +435,9 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
               <div className="flex flex-col gap-2">
                 <Label className="text-xs">Highlights</Label>
                 {(item.highlights ?? []).map((hl, j) => (
-                  <div key={j} className="flex gap-2">
-                    <Input
+                  <div key={j} className="flex items-start gap-2">
+                    <Textarea
+                      className="min-h-[52px] resize-y"
                       value={hl ?? ''}
                       placeholder="Key achievement or contribution..."
                       onChange={(e) => projHL.updateAt(i, j, e.target.value)}
@@ -465,6 +447,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       size="icon"
                       onClick={() => projHL.removeAt(i, j)}
                       className="shrink-0"
+                      title="Remove highlight"
                     >
                       <Trash2 className="text-muted-foreground size-3.5" />
                     </Button>
@@ -481,7 +464,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 onClick={() => proj.removeItem(i)}
                 className="text-destructive mt-2"
               >
-                <Trash2 className="mr-1 size-3.5" /> Remove
+                <Trash2 className="mr-1 size-3.5" /> Remove project
               </Button>
             </div>
           ))}
@@ -490,13 +473,13 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
       {/* Open Source */}
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-between">
-            <Label>Open Source</Label>
-            <Button variant="outline" size="sm" onClick={oss.addItem}>
-              <Plus className="mr-1 size-3.5" /> Add
-            </Button>
-          </div>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Open source</CardTitle>
+          <Button variant="outline" size="sm" onClick={oss.addItem}>
+            <Plus className="mr-1 size-3.5" /> Add contribution
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-0">
           {oss.items.length === 0 && (
             <p className="text-muted-foreground text-sm">
               No open source contributions yet. Add repositories you maintain, contribute to, or
@@ -518,12 +501,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Input
                     value={item.url ?? ''}
                     placeholder="https://..."
-                    onChange={(e) =>
-                      oss.updateItem(i, {
-                        ...item,
-                        url: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => oss.updateItem(i, { ...item, url: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -531,25 +509,15 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Input
                     value={item.role ?? ''}
                     placeholder="e.g. maintainer, contributor"
-                    onChange={(e) =>
-                      oss.updateItem(i, {
-                        ...item,
-                        role: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => oss.updateItem(i, { ...item, role: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1 sm:col-span-2">
                   <Label className="text-xs">Description</Label>
                   <Textarea
-                    className="min-h-[50px] resize-y"
+                    className="min-h-[60px] resize-y"
                     value={item.description ?? ''}
-                    onChange={(e) =>
-                      oss.updateItem(i, {
-                        ...item,
-                        description: e.target.value,
-                      })
-                    }
+                    onChange={(e) => oss.updateItem(i, { ...item, description: e.target.value })}
                   />
                 </div>
               </div>
@@ -563,6 +531,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       <button
                         onClick={() => ossTags.remove(i, tech)}
                         className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                        title={`Remove ${tech}`}
                       >
                         <Trash2 className="size-3" />
                       </button>
@@ -577,8 +546,9 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
               <div className="flex flex-col gap-2">
                 <Label className="text-xs">Highlights</Label>
                 {(item.highlights ?? []).map((hl, j) => (
-                  <div key={j} className="flex gap-2">
-                    <Input
+                  <div key={j} className="flex items-start gap-2">
+                    <Textarea
+                      className="min-h-[52px] resize-y"
                       value={hl ?? ''}
                       placeholder="Key contribution or impact..."
                       onChange={(e) => ossHL.updateAt(i, j, e.target.value)}
@@ -588,6 +558,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                       size="icon"
                       onClick={() => ossHL.removeAt(i, j)}
                       className="shrink-0"
+                      title="Remove highlight"
                     >
                       <Trash2 className="text-muted-foreground size-3.5" />
                     </Button>
@@ -604,7 +575,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 onClick={() => oss.removeItem(i)}
                 className="text-destructive mt-2"
               >
-                <Trash2 className="mr-1 size-3.5" /> Remove
+                <Trash2 className="mr-1 size-3.5" /> Remove contribution
               </Button>
             </div>
           ))}
@@ -613,13 +584,13 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
 
       {/* Other Works */}
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-between">
-            <Label>Other Works</Label>
-            <Button variant="outline" size="sm" onClick={other.addItem}>
-              <Plus className="mr-1 size-3.5" /> Add
-            </Button>
-          </div>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Other works</CardTitle>
+          <Button variant="outline" size="sm" onClick={other.addItem}>
+            <Plus className="mr-1 size-3.5" /> Add item
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-0">
           {other.items.length === 0 && (
             <p className="text-muted-foreground text-sm">
               No other works yet. Add publications, speaking engagements, patents, awards,
@@ -640,17 +611,17 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Label className="text-xs">Type</Label>
                   <Select
                     value={item.type ?? 'other'}
-                    onValueChange={(value) =>
-                      other.updateItem(i, { ...item, type: value ?? 'other' })
+                    onValueChange={(nextValue) =>
+                      other.updateItem(i, { ...item, type: nextValue ?? 'other' })
                     }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {OTHER_WORK_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                      {OTHER_WORK_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -661,12 +632,7 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Input
                     value={item.url ?? ''}
                     placeholder="https://..."
-                    onChange={(e) =>
-                      other.updateItem(i, {
-                        ...item,
-                        url: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => other.updateItem(i, { ...item, url: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -674,25 +640,15 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                   <Input
                     value={item.date ?? ''}
                     placeholder="e.g. 2024 or Mar 2024"
-                    onChange={(e) =>
-                      other.updateItem(i, {
-                        ...item,
-                        date: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => other.updateItem(i, { ...item, date: e.target.value })}
                   />
                 </div>
                 <div className="flex flex-col gap-1 sm:col-span-2">
                   <Label className="text-xs">Description</Label>
                   <Textarea
-                    className="min-h-[50px] resize-y"
+                    className="min-h-[60px] resize-y"
                     value={item.description ?? ''}
-                    onChange={(e) =>
-                      other.updateItem(i, {
-                        ...item,
-                        description: e.target.value,
-                      })
-                    }
+                    onChange={(e) => other.updateItem(i, { ...item, description: e.target.value })}
                   />
                 </div>
               </div>
@@ -702,25 +658,236 @@ export function ResumeEditor({ initial, onSave, onReExtract }: ResumeEditorProps
                 onClick={() => other.removeItem(i)}
                 className="text-destructive mt-2"
               >
-                <Trash2 className="mr-1 size-3.5" /> Remove
+                <Trash2 className="mr-1 size-3.5" /> Remove item
               </Button>
             </div>
           ))}
         </CardContent>
       </Card>
 
-      {/* Actions */}
-      <div className="flex gap-3">
-        <Button onClick={() => onSave(resume)} className="flex-1">
-          <Save className="mr-2 size-4" />
-          Save Resume
-        </Button>
-        <Button variant="outline" onClick={onReExtract}>
-          <Undo2 className="mr-2 size-4" />
-          Re-extract
-        </Button>
-      </div>
+      {/* Custom sections */}
+      <CustomSectionsEditor
+        sections={resume.customSections ?? {}}
+        onChange={(sections) => update('customSections', sections)}
+      />
     </div>
+  );
+}
+
+function SkillsEditor({
+  groups,
+  onChange,
+}: {
+  groups: SkillGroup[];
+  onChange: (groups: SkillGroup[]) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {groups.length === 0 && (
+        <p className="text-muted-foreground text-sm">
+          No skills yet. Add a category and list your skills.
+        </p>
+      )}
+      {groups.map((group, groupIndex) => (
+        <div key={groupIndex} className="rounded-lg border p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <Input
+              className="h-7 max-w-[220px] text-xs font-medium"
+              value={group.name}
+              placeholder="Category (e.g. Frontend)"
+              onChange={(e) => {
+                const next = groups.map((g, i) =>
+                  i === groupIndex ? { ...g, name: e.target.value } : g
+                );
+                onChange(next);
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-destructive ml-auto"
+              title="Remove category"
+              onClick={() => onChange(groups.filter((_, i) => i !== groupIndex))}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {group.items.map((skill, skillIndex) => (
+              <Badge key={`${skill}-${skillIndex}`} variant="secondary" className="gap-1 pr-1">
+                {skill}
+                <button
+                  onClick={() =>
+                    onChange(
+                      groups.map((g, i) =>
+                        i === groupIndex
+                          ? { ...g, items: g.items.filter((_, j) => j !== skillIndex) }
+                          : g
+                      )
+                    )
+                  }
+                  className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                  title={`Remove ${skill}`}
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+
+          <AddSkillInput
+            onAdd={(skill) =>
+              onChange(
+                groups.map((g, i) =>
+                  i === groupIndex && !g.items.includes(skill)
+                    ? { ...g, items: [...g.items, skill] }
+                    : g
+                )
+              )
+            }
+          />
+        </div>
+      ))}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-fit"
+        onClick={() =>
+          onChange([
+            ...groups,
+            {
+              name: nextAvailableName(
+                'Category',
+                groups.map((group) => group.name)
+              ),
+              items: [],
+            },
+          ])
+        }
+      >
+        <Plus className="mr-1 size-3.5" /> Add skill category
+      </Button>
+    </div>
+  );
+}
+
+function AddSkillInput({ onAdd }: { onAdd: (skill: string) => void }) {
+  const [skill, setSkill] = useState('');
+
+  const handleAdd = () => {
+    const trimmed = skill.trim();
+    if (trimmed) {
+      onAdd(trimmed);
+      setSkill('');
+    }
+  };
+
+  return (
+    <div className="mt-2 flex gap-2">
+      <Input
+        className="h-7 text-xs"
+        placeholder="Add a skill..."
+        value={skill}
+        onChange={(e) => setSkill(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAdd();
+          }
+        }}
+      />
+      <Button variant="outline" size="sm" onClick={handleAdd}>
+        <Plus className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+function entriesToSections(
+  entries: ReadonlyArray<readonly [string, string[]]>
+): Record<string, string[]> {
+  const merged: Record<string, string[]> = {};
+  for (const [name, items] of entries) {
+    merged[name] = [...(merged[name] ?? []), ...items];
+  }
+  return merged;
+}
+
+function CustomSectionsEditor({
+  sections,
+  onChange,
+}: {
+  sections: Record<string, string[]>;
+  onChange: (sections: Record<string, string[]>) => void;
+}) {
+  const entries = Object.entries(sections);
+
+  const updateEntry = (index: number, name: string, items: string[]) => {
+    const next = entries.map(([entryName, entryItems], i) =>
+      i === index ? ([name, items] as [string, string[]]) : ([entryName, entryItems] as const)
+    );
+    onChange(entriesToSections(next));
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Custom sections</CardTitle>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Optional extra sections, such as languages or publications.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            onChange({
+              ...sections,
+              [nextAvailableName('New section', Object.keys(sections))]: [],
+            })
+          }
+        >
+          <Plus className="mr-1 size-3.5" /> Add section
+        </Button>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 pt-0">
+        {entries.length === 0 && (
+          <p className="text-muted-foreground text-sm">No custom sections.</p>
+        )}
+        {entries.map(([name, items], index) => (
+          <div key={index} className="rounded-lg border p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Input
+                className="h-7 max-w-[240px] text-xs font-medium"
+                value={name}
+                placeholder="Section heading"
+                onChange={(e) => updateEntry(index, e.target.value, items)}
+              />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-destructive ml-auto"
+                title="Remove section"
+                onClick={() => {
+                  const next = entries.filter((_, i) => i !== index);
+                  onChange(entriesToSections(next));
+                }}
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
+            <Textarea
+              className="min-h-[60px] resize-y text-xs"
+              placeholder="One item per line..."
+              value={items.join('\n')}
+              onChange={(e) => updateEntry(index, name, e.target.value.split('\n'))}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -747,7 +914,12 @@ function AddTagInput({
         placeholder={placeholder}
         value={val}
         onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAdd();
+          }
+        }}
       />
       <Button variant="outline" size="sm" onClick={handleAdd}>
         <Plus className="size-4" />

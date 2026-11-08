@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Copy, Check, Download, ChevronDown, Trophy } from 'lucide-react';
+import { Copy, Check, Download, ChevronDown, Trophy, Pencil, RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import {
   parseResumeSections,
   copyToClipboard,
@@ -22,6 +24,10 @@ interface ResumeDisplayProps {
   // For dynamic download filenames
   roleTitle?: string | null;
   companyName?: string | null;
+  // Editing
+  onResumeChange?: (resume: string) => void;
+  onRebuildLatex?: () => void;
+  latexRebuilding?: boolean;
   // LaTeX mode props
   showLatex?: boolean;
   latexSource?: string | null;
@@ -36,6 +42,9 @@ export function ResumeDisplay({
   totalIterations,
   roleTitle,
   companyName,
+  onResumeChange,
+  onRebuildLatex,
+  latexRebuilding,
   showLatex,
   latexSource,
   latexHtmlBlob,
@@ -44,6 +53,8 @@ export function ResumeDisplay({
   const [copied, setCopied] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(resume);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const sections = parseResumeSections(resume);
 
@@ -62,6 +73,27 @@ export function ResumeDisplay({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [resume]);
+
+  const handleSaveEdits = () => {
+    if (draft === resume) {
+      setEditing(false);
+      return;
+    }
+    if (!onResumeChange) return;
+    onResumeChange(draft);
+    setEditing(false);
+    toast.success('Resume text updated');
+  };
+
+  const handleCancelEdits = () => {
+    setDraft(resume);
+    setEditing(false);
+  };
+
+  const handleStartEditing = () => {
+    setDraft(resume);
+    setEditing(true);
+  };
 
   const handleExport = useCallback(
     async (type: 'txt' | 'docx' | 'pdf') => {
@@ -89,6 +121,17 @@ export function ResumeDisplay({
   if (showLatex && latexSource) {
     return (
       <div className="flex flex-col gap-3">
+        {onRebuildLatex && (
+          <div className="bg-muted/30 flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2">
+            <p className="text-muted-foreground text-xs">
+              LaTeX is built from the text resume. Edited the wording? Rebuild it to update the PDF.
+            </p>
+            <Button variant="outline" size="sm" onClick={onRebuildLatex} disabled={latexRebuilding}>
+              <RefreshCw className={`mr-1.5 size-3.5 ${latexRebuilding ? 'animate-spin' : ''}`} />
+              {latexRebuilding ? 'Rebuilding...' : 'Rebuild from text'}
+            </Button>
+          </div>
+        )}
         <div className="h-[650px]">
           <LaTeXEditor
             initialSource={latexSource}
@@ -107,7 +150,7 @@ export function ResumeDisplay({
       {/* Top toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {iteration > 0 ? `Iteration ${iteration}` : 'Generated Resume'}
           </p>
           {bestScore !== undefined && totalIterations && totalIterations > 1 && (
@@ -117,78 +160,127 @@ export function ResumeDisplay({
             </Badge>
           )}
           {bestScore !== undefined && totalIterations && totalIterations > 1 && iteration > 0 && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               Iteration {iteration} of {totalIterations}
             </span>
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCopy}>
-            {copied ? (
-              <Check className="mr-1.5 size-3.5 text-green-600" />
-            ) : (
-              <Copy className="mr-1.5 size-3.5" />
-            )}
-            {copied ? 'Copied' : 'Copy'}
-          </Button>
+          {editing ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={handleCancelEdits}>
+                <X className="mr-1.5 size-3.5" />
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveEdits} disabled={!onResumeChange}>
+                <Check className="mr-1.5 size-3.5" />
+                Save edits
+              </Button>
+            </>
+          ) : (
+            <>
+              {onResumeChange && (
+                <Button variant="outline" size="sm" onClick={handleStartEditing}>
+                  <Pencil className="mr-1.5 size-3.5" />
+                  Edit
+                </Button>
+              )}
+              {onRebuildLatex && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRebuildLatex}
+                  disabled={latexRebuilding}
+                >
+                  <RefreshCw
+                    className={`mr-1.5 size-3.5 ${latexRebuilding ? 'animate-spin' : ''}`}
+                  />
+                  Rebuild LaTeX
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleCopy}>
+                {copied ? (
+                  <Check className="mr-1.5 size-3.5 text-green-600" />
+                ) : (
+                  <Copy className="mr-1.5 size-3.5" />
+                )}
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
 
-          <div className="relative" ref={dropdownRef}>
-            <Button variant="outline" size="sm" onClick={() => setDropdownOpen((o) => !o)}>
-              <Download className="mr-1.5 size-3.5" />
-              Download
-              <ChevronDown className="ml-1 size-3 opacity-50" />
-            </Button>
-            {dropdownOpen && (
-              <div className="absolute top-full right-0 z-50 mt-1 w-36 rounded-md border bg-popover p-1 shadow-md">
-                <button
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
-                  onClick={() => handleExport('txt')}
-                  disabled={exporting !== null}
-                >
-                  {exporting === 'txt' ? 'Saving...' : 'Download .txt'}
-                </button>
-                <button
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
-                  onClick={() => handleExport('docx')}
-                  disabled={exporting !== null}
-                >
-                  {exporting === 'docx' ? 'Saving...' : 'Download .docx'}
-                </button>
-                <button
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
-                  onClick={() => handleExport('pdf')}
-                  disabled={exporting !== null}
-                >
-                  {exporting === 'pdf' ? 'Saving...' : 'Download .pdf'}
-                </button>
+              <div className="relative" ref={dropdownRef}>
+                <Button variant="outline" size="sm" onClick={() => setDropdownOpen((o) => !o)}>
+                  <Download className="mr-1.5 size-3.5" />
+                  Download
+                  <ChevronDown className="ml-1 size-3 opacity-50" />
+                </Button>
+                {dropdownOpen && (
+                  <div className="bg-popover absolute top-full right-0 z-50 mt-1 w-36 rounded-md border p-1 shadow-md">
+                    <button
+                      className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs disabled:opacity-50"
+                      onClick={() => handleExport('txt')}
+                      disabled={exporting !== null}
+                    >
+                      {exporting === 'txt' ? 'Saving...' : 'Download .txt'}
+                    </button>
+                    <button
+                      className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs disabled:opacity-50"
+                      onClick={() => handleExport('docx')}
+                      disabled={exporting !== null}
+                    >
+                      {exporting === 'docx' ? 'Saving...' : 'Download .docx'}
+                    </button>
+                    <button
+                      className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs disabled:opacity-50"
+                      onClick={() => handleExport('pdf')}
+                      disabled={exporting !== null}
+                    >
+                      {exporting === 'pdf' ? 'Saving...' : 'Download .pdf'}
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Resume content */}
+      {editing ? (
+        <div className="flex flex-col gap-2">
+          <Textarea
+            className="min-h-[500px] resize-y font-mono text-sm leading-relaxed"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            spellCheck={false}
+          />
+          <p className="text-muted-foreground text-xs">
+            Edit any wording or bullet. Save edits updates Copy and downloads. Use Rebuild LaTeX to
+            carry changes into the PDF version.
+          </p>
+        </div>
+      ) : (
+        <div className="dark:bg-card max-h-[500px] overflow-auto rounded-lg border bg-white p-6">
+          <div className="mx-auto max-w-[700px]">
+            {sections.map((section, sIdx) => (
+              <div key={sIdx} className="mb-4 last:mb-0">
+                {section.heading && (
+                  <h3 className="mb-2 border-b border-slate-200 pb-1 text-[13px] font-semibold tracking-wider text-slate-700 uppercase dark:border-slate-700 dark:text-slate-200">
+                    {section.heading}
+                  </h3>
+                )}
+                {section.content.map((line, lIdx) => (
+                  <p
+                    key={lIdx}
+                    className="mb-1 text-[13px] leading-relaxed text-slate-600 last:mb-0 dark:text-slate-300"
+                  >
+                    {line}
+                  </p>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-
-      {/* Resume content with styled sections */}
-      <div className="max-h-[500px] overflow-auto rounded-lg border bg-white p-6 dark:bg-card">
-        <div className="mx-auto max-w-[700px]">
-          {sections.map((section, sIdx) => (
-            <div key={sIdx} className="mb-4 last:mb-0">
-              {section.heading && (
-                <h3 className="mb-2 border-b border-slate-200 pb-1 text-[13px] font-semibold tracking-wider text-slate-700 uppercase dark:border-slate-700 dark:text-slate-200">
-                  {section.heading}
-                </h3>
-              )}
-              {section.content.map((line, lIdx) => (
-                <p
-                  key={lIdx}
-                  className="mb-1 text-[13px] leading-relaxed text-slate-600 last:mb-0 dark:text-slate-300"
-                >
-                  {line}
-                </p>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

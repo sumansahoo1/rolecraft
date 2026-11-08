@@ -64,6 +64,7 @@ src/
   lib/latex/      # Deterministic .tex template, HTML render, browser measure, auto-shrink
   lib/export/     # TXT, DOCX, PDF (plain + spec), .tex download
   lib/parse/      # PDF + DOCX text extraction
+  lib/resume/     # Raw resume parsing, safe merge, canonical JSON comparison
   lib/storage/    # localStorage wrappers (per-provider key + GitHub token + reader pref)
   lib/github/     # REST collection, rate budgets, aggregation, grounding, Markdown
   lib/utils/      # uid(), clamp(), abortable sleep()

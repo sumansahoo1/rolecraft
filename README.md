@@ -68,6 +68,7 @@ After generation, the ResumeSpec is rendered to HTML and measured in a real brow
 - **8 distinct prompts**, each with a specific job. The resume generation prompt is ~150 lines covering the impact framework, quantification tiers, role tailoring, and inference rules. The critique prompt is ~50 lines of structured analysis dimensions plus categorized suggestions. The GitHub summary prompt is grounding-first: it forbids inferred employment/impact claims and requires exact repository names from the dossier.
 - **The convergence logic is explicit**, not just asking the LLM "are we done?" It cross-checks staleness, dual score ceilings, delta stagnation, and LLM self-judgment — with protections against infinite critique loops.
 - **LaTeX output** via a deterministic template (not LLM-generated `.tex` — those hallucinate). Compiles to a 1-page letter-size PDF with proper typesetting.
+- **Editable at both ends.** The master resume has a form editor, a raw JSON editor, and a read-only preview. The generated resume text is also editable in the Builder; rebuilding LaTeX carries those text edits into the PDF.
 - **Everything is typed.** Full TypeScript interfaces for the pipeline state, resume structure, critique results, revision plans, and LaTeX spec.
 
 ## Quick start
