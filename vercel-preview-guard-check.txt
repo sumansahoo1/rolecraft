@@ -1,0 +1,1 @@
+Temporary file to verify that Vercel preview deployments are disabled for non-main branches.
