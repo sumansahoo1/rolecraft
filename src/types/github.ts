@@ -212,6 +212,23 @@ export interface GitHubDataset {
   fetchedAt: string;
 }
 
+export interface GitHubResumeBullet {
+  text: string;
+  evidence: string[];
+}
+
+export interface GitHubProjectHighlight {
+  repo: string;
+  overview: string;
+  bullets: GitHubResumeBullet[];
+}
+
+export interface GitHubOpenSourceHighlight {
+  repo: string;
+  overview: string;
+  bullets: GitHubResumeBullet[];
+}
+
 export interface GitHubWorkSummary {
   headline: string;
   professionalOverview: string;
@@ -223,15 +240,11 @@ export interface GitHubWorkSummary {
     summary: string;
     evidence: string[];
   }>;
-  projectSpotlights: Array<{
-    repo: string;
-    whatItIs: string;
-    technicalSignals: string[];
-    whyItMatters: string;
-  }>;
+  projectHighlights: GitHubProjectHighlight[];
+  openSourceHighlights: GitHubOpenSourceHighlight[];
   collaborationSignals: string[];
   workStyleObservations: string[];
-  resumeBullets: Array<{ text: string; evidence: string[] }>;
+  resumeBullets: GitHubResumeBullet[];
   caveats: string[];
 }
 

@@ -23,7 +23,10 @@ function yearOf(value: string | null): string | null {
   return Number.isNaN(date.getTime()) ? null : String(date.getUTCFullYear());
 }
 
-export function githubProjectToResumeProject(project: GitHubProject): Project {
+export function githubProjectToResumeProject(
+  project: GitHubProject,
+  resumeBullets?: string[]
+): Project {
   const created = yearOf(project.repo.createdAt);
   const pushed = yearOf(project.repo.pushedAt);
   const duration =
@@ -31,12 +34,16 @@ export function githubProjectToResumeProject(project: GitHubProject): Project {
       ? `${created} - ${pushed}`
       : (created ?? pushed ?? undefined);
   const highlights: string[] = [];
-  if (project.repo.stars > 0) highlights.push(`${project.repo.stars} GitHub stars`);
-  if (project.repo.forks > 0) highlights.push(`${project.repo.forks} forks`);
-  if (project.commitCountSampled > 0) {
-    highlights.push(`${project.commitCountSampled} sampled commits`);
+  if (resumeBullets && resumeBullets.length > 0) {
+    highlights.push(...resumeBullets.slice(0, 5));
+  } else {
+    if (project.repo.stars > 0) highlights.push(`${project.repo.stars} GitHub stars`);
+    if (project.repo.forks > 0) highlights.push(`${project.repo.forks} forks`);
+    if (project.commitCountSampled > 0) {
+      highlights.push(`${project.commitCountSampled} sampled commits`);
+    }
+    if (project.readmeExcerpt) highlights.push('Includes project documentation');
   }
-  if (project.readmeExcerpt) highlights.push('Includes project documentation');
 
   return {
     name: project.repo.name,
@@ -56,7 +63,8 @@ export function githubProjectToResumeProject(project: GitHubProject): Project {
 export function mergeGitHubProjectsIntoExtraction(
   extraction: unknown,
   projects: GitHubProject[],
-  max = 4
+  max = 4,
+  bulletsByRepo?: Map<string, string[]>
 ): MergeResult {
   if (!extraction || typeof extraction !== 'object' || Array.isArray(extraction)) {
     return { ok: false, reason: 'no-resume' };
@@ -87,7 +95,10 @@ export function mergeGitHubProjectsIntoExtraction(
   const added: Project[] = [];
   for (const project of projects) {
     if (project.repo.isProfileReadme) continue;
-    const converted = githubProjectToResumeProject(project);
+    const converted = githubProjectToResumeProject(
+      project,
+      bulletsByRepo?.get(project.repo.fullName)
+    );
     const nameKey = keyFor(converted.name);
     const projectUrlKey = urlKey(converted.url);
     if (

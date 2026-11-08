@@ -145,21 +145,36 @@ export function buildGitHubMarkdown(
       }
     }
 
-    if (summary.projectSpotlights.length > 0) {
-      lines.push('## AI project notes');
+    if (summary.projectHighlights.length > 0) {
+      lines.push('## Resume bullets by project');
       lines.push('');
-      for (const item of summary.projectSpotlights) {
+      for (const item of summary.projectHighlights) {
         lines.push(`### ${escapeMarkdownText(item.repo)}`);
         lines.push('');
-        lines.push(escapeMarkdownText(item.whatItIs));
-        lines.push('');
-        if (item.technicalSignals.length > 0) {
-          lines.push(
-            `Technical signals: ${item.technicalSignals.map(escapeMarkdownText).join(', ')}`
-          );
+        if (item.overview) {
+          lines.push(escapeMarkdownText(item.overview));
           lines.push('');
         }
-        lines.push(escapeMarkdownText(item.whyItMatters));
+        for (const bullet of item.bullets) {
+          lines.push(`- ${escapeMarkdownText(bullet.text)}`);
+        }
+        lines.push('');
+      }
+    }
+
+    if (summary.openSourceHighlights.length > 0) {
+      lines.push('## Open-source resume bullets');
+      lines.push('');
+      for (const item of summary.openSourceHighlights) {
+        lines.push(`### ${escapeMarkdownText(item.repo)}`);
+        lines.push('');
+        if (item.overview) {
+          lines.push(escapeMarkdownText(item.overview));
+          lines.push('');
+        }
+        for (const bullet of item.bullets) {
+          lines.push(`- ${escapeMarkdownText(bullet.text)}`);
+        }
         lines.push('');
       }
     }
@@ -183,7 +198,7 @@ export function buildGitHubMarkdown(
     }
 
     if (summary.resumeBullets.length > 0) {
-      lines.push('## Suggested resume bullets');
+      lines.push('## Additional resume bullets');
       lines.push('');
       for (const bullet of summary.resumeBullets) {
         lines.push(`- ${escapeMarkdownText(bullet.text)}`);

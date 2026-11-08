@@ -148,6 +148,27 @@ function buildBaseDossier(dataset: GitHubDataset) {
       externalRepos: collaboration.externalRepos.slice(0, 10),
       issueAuthoringSampled: collaboration.issueAuthoringSampled,
     },
+    openSource: collaboration.externalRepos.slice(0, 10).map((repo) => ({
+      repo: repo.fullName,
+      pullRequestsSampled: repo.pullRequests,
+      mergedPullRequestsSampled: repo.merged,
+      pullRequestTitles: dataset.pullRequests
+        .filter((pr) => pr.repoFullName === repo.fullName)
+        .slice(0, 8)
+        .map((pr) => ({
+          title: truncate(pr.title, 120),
+          merged: pr.merged,
+          year: yearOf(pr.createdAt),
+        })),
+      issueTitles: dataset.issues
+        .filter((issue) => issue.repoFullName === repo.fullName)
+        .slice(0, 5)
+        .map((issue) => ({
+          title: truncate(issue.title, 120),
+          state: issue.state,
+          year: yearOf(issue.createdAt),
+        })),
+    })),
   };
 }
 

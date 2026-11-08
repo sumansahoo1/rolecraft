@@ -9,6 +9,11 @@ describe('GitHub Markdown export', () => {
     expect(markdown).toContain('## GitHub stats');
     expect(markdown).toContain('[octocat/alpha](https://github.com/octocat/alpha)');
     expect(markdown).toContain('TypeScript tooling and Go services');
+    expect(markdown).toContain('## Resume bullets by project');
+    expect(markdown).toContain('### octocat/alpha');
+    expect(markdown).toContain('- Built a TypeScript command line tool');
+    expect(markdown).toContain('## Open-source resume bullets');
+    expect(markdown).toContain('### org/lib');
     expect(markdown).toContain('## Coverage and limitations');
     expect(markdown).toContain('Sampled from public GitHub REST data');
   });
@@ -18,7 +23,7 @@ describe('GitHub Markdown export', () => {
     expect(markdown).toContain('## GitHub stats');
     expect(markdown).toContain('## Project spotlights');
     expect(markdown).not.toContain('## Expertise');
-    expect(markdown).not.toContain('## Suggested resume bullets');
+    expect(markdown).not.toContain('## Additional resume bullets');
   });
 
   it('escapes untrusted text and never emits script or javascript links', () => {
@@ -47,12 +52,18 @@ describe('GitHub Markdown export', () => {
           evidence: [],
         },
       ],
-      projectSpotlights: [
+      projectHighlights: [
         {
           repo: 'octocat/alpha',
-          whatItIs: '<script>what</script>',
-          technicalSignals: ['<img>'],
-          whyItMatters: '<iframe>',
+          overview: '<script>what</script>',
+          bullets: [{ text: '<img>', evidence: [] }],
+        },
+      ],
+      openSourceHighlights: [
+        {
+          repo: 'org/lib',
+          overview: '<script>open source</script>',
+          bullets: [{ text: '<iframe>', evidence: [] }],
         },
       ],
       collaborationSignals: ['<script>collab</script>'],
