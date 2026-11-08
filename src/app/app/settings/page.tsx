@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import type { FocusEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Eye,
@@ -40,6 +41,10 @@ import { createChatCompletion, PROVIDER_CONFIGS, getDefaultModel } from '@/lib/a
 import { verifyGitHubToken } from '@/lib/github/client';
 import type { Provider } from '@/types';
 
+// Let the success state settle before leaving the page. The user can still
+// move to another control during this window, which cancels the redirect.
+const ROUTE_DELAY_MS = 1610;
+
 export default function SettingsPage() {
   const router = useRouter();
   const [provider, setProviderState] = useState<Provider>('deepseek');
@@ -47,12 +52,37 @@ export default function SettingsPage() {
   const [model, setModelState] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [validatingKey, setValidatingKey] = useState(false);
   const [githubToken, setGithubTokenState] = useState('');
   const [showGithubToken, setShowGithubToken] = useState(false);
   const [verifyingGithub, setVerifyingGithub] = useState(false);
   const [githubLogin, setGithubLogin] = useState<string | null>(null);
   const [githubScopes, setGithubScopes] = useState<string[] | null>(null);
-  const prevKeyRef = useRef(apiKey);
+  // Set when the user focuses/changes another control after editing the key.
+  // Navigation stays suppressed until the key field is focused again.
+  const navigationBlockedRef = useRef(false);
+  // Latest key value, so a response from an outdated edit is discarded.
+  const apiKeyRef = useRef(apiKey);
+  // True while the key input holds focus (user is still editing).
+  const keyFieldFocusedRef = useRef(false);
+  // Monotonic id so a stale verification response cannot store/route.
+  const keyRequestIdRef = useRef(0);
+  // Both cards, so "moved to another control" covers the GitHub token too.
+  const settingsRootRef = useRef<HTMLDivElement>(null);
+  // Pending delayed redirect after a successful key check.
+  const routeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Test Connection is an explicit route request even though its button holds focus.
+  const allowRouteWhileFocusedRef = useRef(false);
+
+  useEffect(() => {
+    apiKeyRef.current = apiKey;
+  }, [apiKey]);
+
+  useEffect(() => {
+    return () => {
+      if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
+    };
+  }, []);
 
   // Load stored settings on client only to avoid hydration mismatch
   useEffect(() => {
@@ -64,8 +94,50 @@ export default function SettingsPage() {
     setGithubTokenState(getGitHubToken() ?? '');
   }, []);
 
+  const cancelScheduledRoute = () => {
+    if (routeTimerRef.current) {
+      clearTimeout(routeTimerRef.current);
+      routeTimerRef.current = null;
+    }
+  };
+
+  const canRoute = (routeProvider: Provider, allowFocusedControl: boolean) => {
+    if (navigationBlockedRef.current || keyFieldFocusedRef.current) return false;
+    if (getProvider() !== routeProvider) return false;
+    if (allowFocusedControl) return true;
+    // Any control inside the settings root still holds focus: user is editing.
+    const active = document.activeElement;
+    return !(
+      active instanceof HTMLElement &&
+      active !== document.body &&
+      settingsRootRef.current?.contains(active)
+    );
+  };
+
+  const scheduleRoute = (routeProvider: Provider, allowFocusedControl = false) => {
+    cancelScheduledRoute();
+    if (!canRoute(routeProvider, allowFocusedControl)) return;
+    routeTimerRef.current = setTimeout(() => {
+      routeTimerRef.current = null;
+      if (canRoute(routeProvider, allowFocusedControl)) router.push('/app');
+    }, ROUTE_DELAY_MS);
+  };
+
+  // Any focus inside the settings area that is not the API key field means
+  // the user is still configuring. Cancel the pending redirect.
+  const handleSettingsFocusCapture = (event: FocusEvent<HTMLDivElement>) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || target.id === 'api-key') return;
+    allowRouteWhileFocusedRef.current = false;
+    navigationBlockedRef.current = true;
+    cancelScheduledRoute();
+  };
+
   const handleProviderChange = (value: string | null) => {
     if (!value) return;
+    navigationBlockedRef.current = true;
+    allowRouteWhileFocusedRef.current = false;
+    cancelScheduledRoute();
     const p = value as Provider;
     setProviderState(p);
     setProvider(p);
@@ -78,19 +150,86 @@ export default function SettingsPage() {
   };
 
   const handleApiKeyChange = (value: string) => {
+    // Keep the key in memory only. It is persisted after a successful check.
+    apiKeyRef.current = value;
     setApiKeyState(value);
-    setApiKey(value, provider);
   };
 
-  const handleKeyBlur = () => {
-    if (apiKey.trim() && !prevKeyRef.current.trim()) {
-      router.push('/app');
+  const handleApiKeyFocus = () => {
+    // Editing the key again clears the "user moved on" guard.
+    navigationBlockedRef.current = false;
+    keyFieldFocusedRef.current = true;
+    allowRouteWhileFocusedRef.current = false;
+    cancelScheduledRoute();
+  };
+
+  /**
+   * Validate a key against the provider, then persist it only on success.
+   * Returns true when the key is valid. A stale response (key/provider
+   * changed mid-flight) is ignored.
+   */
+  const verifyAndStoreKey = async (
+    keyProvider: Provider,
+    key: string,
+    requestId: number
+  ): Promise<boolean> => {
+    try {
+      await createChatCompletion({
+        provider: keyProvider,
+        model: model || getDefaultModel(keyProvider),
+        apiKey: key,
+        messages: [{ role: 'user', content: 'Ping' }],
+        maxTokens: 32,
+        temperature: 0,
+      });
+      // Discard the response if the user kept typing while it was in flight.
+      if (requestId !== keyRequestIdRef.current || key !== apiKeyRef.current.trim()) return false;
+      setApiKey(key, keyProvider);
+      return true;
+    } catch (err) {
+      if (requestId === keyRequestIdRef.current) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        toast.error(`Connection failed: ${message}`);
+      }
+      return false;
     }
-    prevKeyRef.current = apiKey;
+  };
+
+  const handleKeyBlur = async (event: FocusEvent<HTMLInputElement>) => {
+    keyFieldFocusedRef.current = false;
+    allowRouteWhileFocusedRef.current = false;
+    cancelScheduledRoute();
+    const key = apiKey.trim();
+    if (!key) return;
+
+    // No change: do nothing. No API call, no navigation.
+    if (key === (getApiKey(provider) ?? '').trim()) return;
+
+    // Clicking another control anywhere in settings is intent to keep editing.
+    const next = event.relatedTarget;
+    if (next instanceof HTMLElement && settingsRootRef.current?.contains(next)) {
+      navigationBlockedRef.current = true;
+    }
+
+    const requestId = ++keyRequestIdRef.current;
+    setValidatingKey(true);
+    try {
+      const valid = await verifyAndStoreKey(provider, key, requestId);
+      if (valid) {
+        toast.success('Connection successful — API key is valid');
+        // Wait before leaving, in case the user is still configuring.
+        scheduleRoute(provider);
+      }
+    } finally {
+      if (requestId === keyRequestIdRef.current) setValidatingKey(false);
+    }
   };
 
   const handleModelChange = (value: string | null) => {
     if (!value) return;
+    navigationBlockedRef.current = true;
+    allowRouteWhileFocusedRef.current = false;
+    cancelScheduledRoute();
     setModelState(value);
     setModel(value);
   };
@@ -101,23 +240,25 @@ export default function SettingsPage() {
       return;
     }
 
+    // Explicit test action: verify, store, then route after the delay.
+    navigationBlockedRef.current = false;
+    keyFieldFocusedRef.current = false;
+    allowRouteWhileFocusedRef.current = true;
+    cancelScheduledRoute();
+    const requestId = ++keyRequestIdRef.current;
     setTesting(true);
+    setValidatingKey(true);
     try {
-      await createChatCompletion({
-        provider,
-        model: model || getDefaultModel(provider),
-        apiKey: apiKey.trim(),
-        messages: [{ role: 'user', content: 'Ping' }],
-        maxTokens: 32,
-        temperature: 0,
-      });
-      toast.success('Connection successful — API key is valid');
-      router.push('/app');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      toast.error(`Connection failed: ${message}`);
+      const valid = await verifyAndStoreKey(provider, apiKey.trim(), requestId);
+      if (valid) {
+        toast.success('Connection successful — API key is valid');
+        scheduleRoute(provider, allowRouteWhileFocusedRef.current);
+      }
     } finally {
-      setTesting(false);
+      if (requestId === keyRequestIdRef.current) {
+        setTesting(false);
+        setValidatingKey(false);
+      }
     }
   };
 
@@ -175,7 +316,11 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center overflow-auto p-6">
-      <div className="flex w-full max-w-md flex-col gap-6">
+      <div
+        ref={settingsRootRef}
+        onFocusCapture={handleSettingsFocusCapture}
+        className="flex w-full max-w-md flex-col gap-6"
+      >
         <Card>
           <CardHeader>
             <CardTitle>Settings</CardTitle>
@@ -211,9 +356,14 @@ export default function SettingsPage() {
                   placeholder={provider === 'deepseek' ? 'sk-...' : 'Enter your API key'}
                   value={apiKey}
                   onChange={(e) => handleApiKeyChange(e.target.value)}
+                  onFocus={handleApiKeyFocus}
                   onBlur={handleKeyBlur}
-                  className="pr-9"
+                  aria-busy={validatingKey}
+                  className={validatingKey ? 'pr-14' : 'pr-9'}
                 />
+                {validatingKey && (
+                  <Loader2 className="text-muted-foreground absolute top-1/2 right-9 size-4 -translate-y-1/2 animate-spin" />
+                )}
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
