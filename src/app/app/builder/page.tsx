@@ -206,6 +206,18 @@ export default function BuilderPage() {
     if (pipelineDone) setUserPickedTab(true);
   };
 
+  const handleRebuildLatex = () => {
+    if (!pipeline.currentResume) {
+      toast.error('No resume text to rebuild from');
+      return;
+    }
+    const confirmed = window.confirm(
+      'Rebuild LaTeX from the current text resume? Manual LaTeX source edits and the previous preview will be replaced.'
+    );
+    if (!confirmed) return;
+    void pipeline.rebuildLatex(pipeline.currentResume);
+  };
+
   // Auto-advance to LaTeX tab when it becomes available
   const displayTab =
     pipelineDone && !userPickedTab ? (latexAvailable ? 'latex' : 'resume') : activeTab;
@@ -293,6 +305,12 @@ export default function BuilderPage() {
                   <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
                     Best resume (score {pipeline.bestScore}) shown. Last iteration scored{' '}
                     {pipeline.critique?.score}.
+                  </p>
+                )}
+                {pipeline.resumeEdited && (
+                  <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Text was edited after scoring. Scores and critique refer to the previous
+                    version.
                   </p>
                 )}
               </div>
@@ -389,16 +407,21 @@ export default function BuilderPage() {
                 )}
               </TabsContent>
 
-              <TabsContent value="resume" className="mt-4">
+              <TabsContent value="resume" className="mt-4" keepMounted>
                 {pipeline.currentResume ? (
                   <ErrorBoundary>
                     <ResumeDisplay
                       resume={pipeline.currentResume}
                       iteration={pipeline.iteration}
-                      bestScore={pipeline.bestScore}
+                      bestScore={pipeline.resumeEdited ? undefined : pipeline.bestScore}
                       totalIterations={pipeline.history.length}
                       roleTitle={pipeline.analysis?.roleTitle}
                       companyName={pipeline.analysis?.companyName}
+                      onResumeChange={
+                        pipeline.running ? undefined : (resume) => pipeline.updateResume(resume)
+                      }
+                      onRebuildLatex={pipeline.latexSource ? handleRebuildLatex : undefined}
+                      latexRebuilding={pipeline.running}
                     />
                   </ErrorBoundary>
                 ) : pipeline.running &&
@@ -434,13 +457,13 @@ export default function BuilderPage() {
               </TabsContent>
 
               {/* LaTeX Tab */}
-              <TabsContent value="latex" className="mt-4">
+              <TabsContent value="latex" className="mt-4" keepMounted>
                 {pipeline.latexSource ? (
                   <ErrorBoundary>
                     <ResumeDisplay
                       resume={pipeline.currentResume || ''}
                       iteration={pipeline.iteration}
-                      bestScore={pipeline.bestScore}
+                      bestScore={pipeline.resumeEdited ? undefined : pipeline.bestScore}
                       totalIterations={pipeline.history.length}
                       roleTitle={pipeline.analysis?.roleTitle}
                       companyName={pipeline.analysis?.companyName}
@@ -448,6 +471,8 @@ export default function BuilderPage() {
                       latexSource={pipeline.latexSource}
                       latexHtmlBlob={pipeline.latexHtmlBlob}
                       resumeSpec={pipeline.resumeSpec}
+                      onRebuildLatex={pipeline.latexSource ? handleRebuildLatex : undefined}
+                      latexRebuilding={pipeline.running}
                     />
                   </ErrorBoundary>
                 ) : latexPhase ? (

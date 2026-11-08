@@ -7,63 +7,14 @@ import {
   RESUME_EXTRACTION_PROMPT,
 } from '@/lib/ai';
 import { getApiKey, getModel, getProvider, setExtractionJson } from '@/lib/storage';
-import type { MasterResume, Project, OpenSource, OtherWork } from '@/types';
+import { parseMasterResume } from '@/lib/resume/normalize';
+import type { MasterResume } from '@/types';
 
 interface ExtractionState {
   loading: boolean;
   error: string | null;
   result: MasterResume | null;
   rawJson: Record<string, unknown> | null;
-}
-
-function parseProjects(raw: unknown): Project[] | undefined {
-  if (!Array.isArray(raw)) return undefined;
-  if (raw.length === 0) return undefined;
-  return raw.map((item: unknown) => {
-    if (typeof item === 'string') {
-      return { name: item, description: '' };
-    }
-    const p = item as Record<string, unknown>;
-    return {
-      name: String(p.name ?? ''),
-      description: String(p.description ?? ''),
-      url: p.url ? String(p.url) : undefined,
-      technologies: Array.isArray(p.technologies) ? p.technologies.map(String) : undefined,
-      duration: p.duration ? String(p.duration) : undefined,
-      highlights: Array.isArray(p.highlights) ? p.highlights.map(String) : undefined,
-    };
-  });
-}
-
-function parseOpenSource(raw: unknown): OpenSource[] | undefined {
-  if (!Array.isArray(raw)) return undefined;
-  if (raw.length === 0) return undefined;
-  return raw.map((item: unknown) => {
-    const o = item as Record<string, unknown>;
-    return {
-      name: String(o.name ?? ''),
-      description: String(o.description ?? ''),
-      url: o.url ? String(o.url) : undefined,
-      role: o.role ? String(o.role) : undefined,
-      technologies: Array.isArray(o.technologies) ? o.technologies.map(String) : undefined,
-      highlights: Array.isArray(o.highlights) ? o.highlights.map(String) : undefined,
-    };
-  });
-}
-
-function parseOtherWorks(raw: unknown): OtherWork[] | undefined {
-  if (!Array.isArray(raw)) return undefined;
-  if (raw.length === 0) return undefined;
-  return raw.map((item: unknown) => {
-    const w = item as Record<string, unknown>;
-    return {
-      title: String(w.title ?? ''),
-      type: String(w.type ?? 'other'),
-      description: String(w.description ?? ''),
-      url: w.url ? String(w.url) : undefined,
-      date: w.date ? String(w.date) : undefined,
-    };
-  });
 }
 
 export function useResumeExtraction() {
@@ -108,44 +59,7 @@ export function useResumeExtraction() {
 
       setExtractionJson(raw);
 
-      const parsed: MasterResume = {
-        name: (raw.name as string) ?? '',
-        email: (raw.email as string) ?? '',
-        phone: (raw.phone as string) ?? undefined,
-        linkedin: (raw.linkedin as string) ?? undefined,
-        github: (raw.github as string) ?? undefined,
-        twitter: (raw.twitter as string) ?? undefined,
-        portfolio: (raw.portfolio as string) ?? undefined,
-        summary: (raw.summary as string) ?? '',
-        skills:
-          typeof raw.skills === 'object' && !Array.isArray(raw.skills)
-            ? (raw.skills as Record<string, string[]>)
-            : Array.isArray(raw.skills)
-              ? (raw.skills as string[])
-              : [],
-        experience: Array.isArray(raw.experience)
-          ? raw.experience.map((e: Record<string, unknown>) => ({
-              company: (e.company as string) ?? '',
-              role: (e.role as string) ?? '',
-              duration: (e.duration as string) ?? '',
-              highlights: Array.isArray(e.highlights) ? (e.highlights as string[]) : [],
-            }))
-          : [],
-        education: Array.isArray(raw.education)
-          ? raw.education.map((e: Record<string, unknown>) => ({
-              institution: (e.institution as string) ?? '',
-              degree: (e.degree as string) ?? '',
-              field: (e.field as string) ?? '',
-              year: (e.year as string) ?? '',
-            }))
-          : [],
-        certifications: Array.isArray(raw.certifications)
-          ? (raw.certifications as string[])
-          : undefined,
-        projects: parseProjects(raw.projects),
-        openSource: parseOpenSource(raw.openSource),
-        otherWorks: parseOtherWorks(raw.otherWorks),
-      };
+      const parsed = parseMasterResume(raw);
 
       setState({ loading: false, error: null, result: parsed, rawJson: raw });
       return parsed;
