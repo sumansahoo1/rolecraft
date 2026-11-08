@@ -44,6 +44,8 @@ import type { Provider } from '@/types';
 // Let the success state settle before leaving the page. The user can still
 // move to another control during this window, which cancels the redirect.
 const ROUTE_DELAY_MS = 1610;
+// Main app screen. The app root sends users to the resume or builder page.
+const APP_ROUTE = '/app/resume';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -121,12 +123,16 @@ export default function SettingsPage() {
     );
   };
 
-  const scheduleRoute = (routeProvider: Provider, allowFocusedControl = false) => {
+  const scheduleRoute = (
+    routeProvider: Provider,
+    allowFocusedControl = false,
+    destination = '/app'
+  ) => {
     cancelScheduledRoute();
     if (!canRoute(routeProvider, allowFocusedControl)) return;
     routeTimerRef.current = setTimeout(() => {
       routeTimerRef.current = null;
-      if (canRoute(routeProvider, allowFocusedControl)) router.push('/app');
+      if (canRoute(routeProvider, allowFocusedControl)) router.push(destination);
     }, ROUTE_DELAY_MS);
   };
 
@@ -301,22 +307,34 @@ export default function SettingsPage() {
     }
   };
 
+  const handleGithubTokenFocus = () => {
+    // Editing the token again clears the "user moved on" guard that the
+    // settings focus capture sets for every control except the API key.
+    navigationBlockedRef.current = false;
+    allowRouteWhileFocusedRef.current = false;
+    cancelScheduledRoute();
+  };
+
   const handleGithubTokenBlur = async (event: FocusEvent<HTMLInputElement>) => {
     const token = githubToken.trim();
     if (!token || token === lastVerifiedGithubTokenRef.current) return;
 
     // Clicking another control in settings is intent to keep editing; Verify
-    // and Remove handle routing explicitly in that case.
+    // handles routing explicitly in that case.
     const next = event.relatedTarget;
     if (next instanceof HTMLElement && settingsRootRef.current?.contains(next)) {
       navigationBlockedRef.current = true;
       return;
     }
 
-    // Same flow as the API key: check the token, then forward only on success.
+    // Focus left settings, so the user is done configuring. Same flow as the
+    // API key: check the token, then forward only on success.
+    navigationBlockedRef.current = false;
     setVerifyingGithub(true);
     try {
-      if (await verifyGithubTokenValue(token)) scheduleRoute(provider);
+      if (await verifyGithubTokenValue(token)) {
+        scheduleRoute(provider, false, APP_ROUTE);
+      }
     } finally {
       setVerifyingGithub(false);
     }
@@ -335,7 +353,7 @@ export default function SettingsPage() {
     cancelScheduledRoute();
     setVerifyingGithub(true);
     try {
-      if (await verifyGithubTokenValue(token)) scheduleRoute(provider, true);
+      if (await verifyGithubTokenValue(token)) scheduleRoute(provider, true, APP_ROUTE);
     } finally {
       allowRouteWhileFocusedRef.current = false;
       setVerifyingGithub(false);
@@ -489,6 +507,7 @@ export default function SettingsPage() {
                   placeholder="github_pat_... or ghp_..."
                   value={githubToken}
                   onChange={(e) => handleGithubTokenChange(e.target.value)}
+                  onFocus={handleGithubTokenFocus}
                   onBlur={handleGithubTokenBlur}
                   className="pr-9"
                   autoComplete="off"
